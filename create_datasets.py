@@ -40,10 +40,14 @@ def export_data(lang,compressed=False):
 
 	if compressed:
 		output_fn = os.path.join(data_dir,'%s_geo.tsv.gz'%lang)	
-		export_command = ['mysql', '-h', host_name,  '-u%s'%user_name,  '-p%s'%pw ,'-e', export_query, '|', 'gzip', '-c' ,'>', output_fn]
+		# export_command = ['mysql', '-h', host_name,  '-u%s'%user_name,  '-p%s'%pw ,'-e', export_query, '|', 'gzip', '-c' ,'>', output_fn]
+		export_command = ['mysql', '-h', host_name ,'-e', export_query, '|', 'gzip', '-c' ,'>', output_fn]
+
 	else:
 		output_fn = os.path.join(data_dir,'%s_geo.tsv'%lang)		
-		export_command = ['mysql', '-h', host_name,  '-u%s'%user_name,  '-p%s'%pw ,'-e', export_query, '>', output_fn]
+		# export_command = ['mysql', '-h', host_name,  '-u%s'%user_name,  '-p%s'%pw ,'-e', export_query, '>', output_fn]
+		export_command = ['mysql', '-h', host_name ,'-e', export_query, '>', output_fn]
+
 
 
 	# use problematic os.system instead of subprocess
@@ -94,7 +98,7 @@ if __name__ == '__main__':
 	p = Pool(3)
 
 	# languages = languages.languages
-	languages =  ['pt', 'hi', 'ar']
+	languages =  ['ar']
 	p.map(create_dataset, languages)
 
 	print 'All languages done. Results are in %s folder'%(output_dir)

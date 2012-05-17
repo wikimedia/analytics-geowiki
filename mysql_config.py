@@ -2,12 +2,18 @@
 
 The method `get_host_name(wp_pr)` returns a host name for the Wikipedia project passed as parameter.
 
-The login info has to to be configured. 
-"""
+The login info has to to be configured by creating the file `~/.my.cnf` with the following conent:
 
-# login credentials
-user_name = 'wikiadmin'
-password = 'test'
+
+"""
+import os,logging
+
+# check for login credentials
+if not os.exists()
+
+
+# user_name = 'wikiadmin'
+# password = 'test'
 
 
 # wikimedia cluster information extracted from http://noc.wikimedia.org/conf/highlight.php?file=db.php

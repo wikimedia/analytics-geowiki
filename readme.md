@@ -19,6 +19,7 @@ One needs access to IP addresses to create geo coded datasets from wikipedia. [W
 ## Dependencies
 
 * Python > 2.6
+* [mySQLdb](http://mysql-python.sourceforge.net/)
 * Access to MediaWiki MySQL databases
 * [pygeoip](https://github.com/appliedsec/pygeoip), API for Maxmind GeoIP databases
 * [GeoIP City Database](http://www.maxmind.com/app/city) from Mindmind 
