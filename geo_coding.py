@@ -17,7 +17,7 @@ import operator
 import pygeoip
 
 # Path to Geo IP database
-geoIP_fn = ' /usr/share/GeoIP/GeoIPCity.dat'
+geoIP_fn = '/usr/share/GeoIP/GeoIPCity.dat'
 
 gi = pygeoip.GeoIP(geoIP_fn, pygeoip.MEMORY_CACHE)
 
