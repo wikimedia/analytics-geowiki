@@ -9,7 +9,8 @@ The login info has to to be configured by creating the file `~/.my.cnf` with the
 import os,logging
 
 # check for login credentials
-if not os.exists()
+if not os.path.exists(os.path.expanduser("~/.my.cnf"))
+	logging.info("~/.my.cnf does not exist! MySql connection might fail.")
 
 
 # user_name = 'wikiadmin'
