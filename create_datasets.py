@@ -30,8 +30,8 @@ def export_data(lang,compressed=False):
 
 	host_name = mysql_config.get_host_name(lang)
 	db_name = mysql_config.get_db_name(lang)
-	user_name = mysql_config.user_name
-	pw = mysql_config.password
+	# user_name = mysql_config.user_name
+	# pw = mysql_config.password
 
 	
 	# mysql query to export recent changes data
