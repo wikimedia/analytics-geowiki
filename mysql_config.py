@@ -16,6 +16,11 @@ if not os.path.exists(os.path.expanduser("~/.my.cnf")):
 # user_name = 'wikiadmin'
 # password = 'test'
 
+# mysql query for the recent changes data
+recentchanges_query = "SELECT rc_user_text, rc_ip FROM %s.recentchanges rc WHERE rc.rc_namespace=0 AND rc.rc_user!=0 AND rc_bot=0 LIMIT 100"
+# recentchanges_query = "'SELECT rc_user_text, rc_ip, rc_new_len-rc_old_len AS len_change FROM %s.recentchanges rc WHERE rc.rc_namespace=0 AND rc.rc_user!=0 AND rc_bot=0'"%db_name
+
+
 
 # wikimedia cluster information extracted from http://noc.wikimedia.org/conf/highlight.php?file=db.php
 # NOTE: The default mapping is 's3'

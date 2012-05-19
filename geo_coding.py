@@ -8,7 +8,7 @@ ETL for geo coding entries from the recentchanges table.
 
 '''
 
-import sys,os
+import sys,os,logging
 import gzip
 import operator
 
@@ -25,7 +25,7 @@ gi = pygeoip.GeoIP(geoIP_fn, pygeoip.MEMORY_CACHE)
 # print gi.record_by_addr('178.192.86.113')
 
 ### EXTRACT
-def extract(fn_in,compressed=False):
+def extract(source,sep=None):
 	'''Extracts geo data on editor and country/city level from the data source.
 
 	The source is a compressed mysql result set with the following format.
@@ -36,34 +36,29 @@ def extract(fn_in,compressed=False):
 		s[2] == len changed
 
 	:arg source: iterable
+	:arg sep: str, separator for elements in source if they are strings. If None, elemtns won't be split
 	:returns: (editors,countries)
 	'''
 
 	editors = {}
 	countries = {}
 
-	if not os.path.exists(fn_in):
-		print "Warning: %s doesn't exist."%fn_in
-		return (editors,countries)
 
+	for line in source:		
 
-	if compressed:
-		source =  gzip.open(fn_in, 'r')
-	else:
-		source =  open(fn_in, 'r')
+		print line
 
-	# discard the headers!
-	source.readline()
-
-	for line in source:
-		res = line[:-1].split('\t')
+		if sep:
+			res = line[:-1].split(sep)
+		else:
+			res = line
 		
 		user = res[0]
 		ip = res[1]
-		try:
-			len_change = int(res[2])
-		except:
-			len_change = 0
+		# try:
+		# 	len_change = int(res[2])
+		# except:
+		# 	len_change = 0
 		# len_change = int(res[2]) if res[2] else 0
 
 		# geo lookup
@@ -102,12 +97,12 @@ def extract(fn_in,compressed=False):
 
 		if country in editors[user]:
 			editors[user][country]['edits'] += 1
-			editors[user][country]['len_change'] += len_change
+			# editors[user][country]['len_change'] += len_change
 		else:
 			# country not in editors[user]
 			editors[user][country] = {}
 			editors[user][country]['edits'] = 1
-			editors[user][country]['len_change'] = len_change
+			# editors[user][country]['len_change'] = len_change
 
 	return (editors,countries)
 

@@ -11,11 +11,11 @@ Export geo location data from the recent_changes table. The script is running mu
 from multiprocessing import Pool
 import os
 
-# if only we could use a mysql driver....
-# try:
-#     import MySQLdb,MySQLdb.cursors
-# except:
-#     print "Warning: SQL module MySQLdb could not be imported."
+if only we could use a mysql driver....
+try:
+    import MySQLdb,MySQLdb.cursors
+except:
+    logging.warning("Warning: SQL module MySQLdb could not be imported.")
 
 import geo_coding as gc
 import languages
@@ -25,8 +25,24 @@ data_dir = './data'
 output_dir = './output'
 
 
-def export_data(lang,compressed=False):
-	'''Dumps the needed entries from the recent changes table for language lang'''
+def mysql_cursor(lang):
+
+	host_name = mysql_config.get_host_name(lang)
+	db_name = mysql_config.get_db_name(lang)
+
+	# mysql query to export recent changes data
+	query = mysql_config.recentchanges_query%db_name
+
+	db = MySQLdb.connect(host=host_name,user=user_name,passwd=pw)
+	SScur = db.cursor(MySQLdb.cursors.SSCursor)
+	return SScur.execute(query)
+
+
+def dump_data_iterator(lang,compressed=False):
+	'''Dumps the needed entries from the recent changes table for language lang.
+
+	:returns: Iterable open file object 
+	'''
 
 	host_name = mysql_config.get_host_name(lang)
 	db_name = mysql_config.get_db_name(lang)
@@ -35,42 +51,52 @@ def export_data(lang,compressed=False):
 
 	
 	# mysql query to export recent changes data
-	export_query = "'SELECT rc_user_text, rc_ip, rc_new_len-rc_old_len AS len_change FROM %s.recentchanges rc WHERE rc.rc_namespace=0 AND rc.rc_user!=0 AND rc_bot=0'"%db_name
+	query = mysql_config.recentchanges_query%db_name
 
 
 	if compressed:
 		output_fn = os.path.join(data_dir,'%s_geo.tsv.gz'%lang)	
-		# export_command = ['mysql', '-h', host_name,  '-u%s'%user_name,  '-p%s'%pw ,'-e', export_query, '|', 'gzip', '-c' ,'>', output_fn]
-		export_command = ['mysql', '-h', host_name ,'-e', export_query, '|', 'gzip', '-c' ,'>', output_fn]
+		# export_command = ['mysql', '-h', host_name,  '-u%s'%user_name,  '-p%s'%pw ,'-e', "'%s'"%query, '|', 'gzip', '-c' ,'>', output_fn]
+		export_command = ['mysql', '-h', host_name ,'-e', "'%s'"%query, '|', 'gzip', '-c' ,'>', output_fn]
 
 	else:
 		output_fn = os.path.join(data_dir,'%s_geo.tsv'%lang)		
-		# export_command = ['mysql', '-h', host_name,  '-u%s'%user_name,  '-p%s'%pw ,'-e', export_query, '>', output_fn]
-		export_command = ['mysql', '-h', host_name ,'-e', export_query, '>', output_fn]
+		# export_command = ['mysql', '-h', host_name,  '-u%s'%user_name,  '-p%s'%pw ,'-e', "'%s'"%query, '>', output_fn]
+		export_command = ['mysql', '-h', host_name ,'-e', "'%s'"%query, '>', output_fn]
 
 
 
 	# use problematic os.system instead of subprocess
 	os.system(' '.join(export_command))	
 
-	# if only we could use a mysql driver....
-	# db = MySQLdb.connect(host=host_name,user=user_name,passwd=pw)
-	# SScur = db.cursor(MySQLdb.cursors.SSCursor)
-	# return SScur.execute(export_query)
 
-	return output_fn
+	if compressed:
+		source =  gzip.open(output_fn, 'r')
+	else:
+		source =  open(output_fn, 'r')
+
+	# discard the headers!
+	source.readline()
+
+	return source
 
 
 
 def create_dataset(lang):
 
-	print 'CREATING DATASET FOR ',lang
-
-	# export the data from mysql
-	fn = export_data(lang)	
+	logging.info('CREATING DATASET FOR ',lang)
 
 	# EXTRACT
-	(editors,countries_cities) = gc.extract(fn)
+
+	### export the data from mysql by dumping into a temp file
+	# source = dump_data_iterator(lang,compressed=True)		
+	# (editors,countries_cities) = gc.extract(source,sep='\t')
+	
+	# OR
+
+	### use a server-side cursor to iterate the result set
+	source = mysql_cursor(lang)
+	(editors,countries_cities) = gc.extract(source)
 
 	# TRANSFORM (only for editors)
 	countries_editors = gc.transform(editors)
@@ -81,7 +107,7 @@ def create_dataset(lang):
 	# delete the exported data
 	# os.system('rm %s'%fn)
 
-	print 'DONE : ',lang
+	logging.info('DONE : ',lang)
 
 
 if __name__ == '__main__':
@@ -101,5 +127,5 @@ if __name__ == '__main__':
 	languages =  ['ar']
 	p.map(create_dataset, languages)
 
-	print 'All languages done. Results are in %s folder'%(output_dir)
+	logging.info('All languages done. Results are in %s folder'%(output_dir))
 
