@@ -205,9 +205,8 @@ def load(lang,countries_editors,countries_cities,output_dir='.',sep = '\t'):
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	countries_cities_json = {}
 	countries_cities_json['project'] = lang
-	countries_cities_json['world'] = countries_editors["World"]
-	countries_cities_json['countries'] = countries_editors
-	json.dump(countries_cities,f,sort_keys=True,ensure_ascii=False)
+	countries_cities_json['countries'] = countries_cities
+	json.dump(countries_cities_json,f,sort_keys=True,ensure_ascii=False)
 
 	fn = os.path.join(output_dir,'%s_geo_cities.tsv'%lang)
 	f = codecs.open(fn, encoding='utf-8',mode='w')
