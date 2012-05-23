@@ -124,23 +124,28 @@ def transform(editors,countries,top_cities=10):
 
 	countries_editors = {}
 
-	for ed, ginfo in editors.iteritems():
+	countries_editors["World"] = {"all":0,"5+":0,"100+":0}
+	for editors, ginfo in editors.iteritems():
 
 		for country , einfo in ginfo.iteritems():
 
 			if country not in countries_editors:
 				countries_editors[country] = {"all":0,"5+":0,"100+":0}
 
-			if einfo['edits'] > 0:
+			if einfo['edits'] > 0:				
 				countries_editors[country]["all"] +=1 
+				countries_editors["World"]["all"] += 1
 				if einfo['edits'] >= 5:
 					countries_editors[country]["5+"] +=1
+					countries_editors["World"]["5+"] += 1
 					if einfo['edits'] >= 100:
 						countries_editors[country]["100+"] +=1 
+						countries_editors["World"]["100+"] += 1
+
 
 	### City rankings
 
-	countries_cities = {}	
+	countries_cities = {}
 	for country,cities in countries.iteritems():
 		
 		countries_cities[country] = {}
@@ -178,7 +183,11 @@ def load(lang,countries_editors,countries_cities,output_dir='.',sep = '\t'):
 	# Editor activity per country
 	fn = os.path.join(output_dir,'%s_geo_editors.json'%lang)
 	f = codecs.open(fn, encoding='utf-8',mode='w')
-	json.dump(countries_editors,f,sort_keys=True,ensure_ascii=False)
+	countries_editors_json = {}
+	countries_editors_json['project'] = lang
+	countries_editors_json['world'] = countries_editors["World"]
+	countries_editors_json['countries'] = countries_editors
+	json.dump(countries_editors_json,f,sort_keys=True,ensure_ascii=False)
 
 	fn = os.path.join(output_dir,'%s_geo_editors.tsv'%lang)
 	f = codecs.open(fn, encoding='utf-8',mode='w')
@@ -194,6 +203,10 @@ def load(lang,countries_editors,countries_cities,output_dir='.',sep = '\t'):
 
 	fn = os.path.join(output_dir,'%s_geo_cities.json'%lang)
 	f = codecs.open(fn, encoding='utf-8',mode='w')
+	countries_cities_json = {}
+	countries_cities_json['project'] = lang
+	countries_cities_json['world'] = countries_editors["World"]
+	countries_cities_json['countries'] = countries_editors
 	json.dump(countries_cities,f,sort_keys=True,ensure_ascii=False)
 
 	fn = os.path.join(output_dir,'%s_geo_cities.tsv'%lang)
