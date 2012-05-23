@@ -6,7 +6,12 @@ The login info has to to be configured by creating the file `~/.my.cnf` with the
 
 
 """
-import os,logging
+import os
+import logging
+
+from datetime import datetime
+import calendar
+
 
 # check for login credentials
 if not os.path.exists(os.path.expanduser("~/.my.cnf")):
@@ -17,8 +22,34 @@ if not os.path.exists(os.path.expanduser("~/.my.cnf")):
 # password = 'test'
 
 # mysql query for the recent changes data
-recentchanges_query = "SELECT rc_user_text, rc_ip FROM %s.recentchanges rc WHERE rc.rc_namespace=0 AND rc.rc_user!=0 AND rc_bot=0 LIMIT 100"
-# recentchanges_query = "'SELECT rc_user_text, rc_ip, rc_new_len-rc_old_len AS len_change FROM %s.recentchanges rc WHERE rc.rc_namespace=0 AND rc.rc_user!=0 AND rc_bot=0'"%db_name
+recentchanges_query = "SELECT rc.rc_user_text, rc.rc_ip FROM %s.recentchanges rc WHERE rc.rc_namespace=0 AND rc.rc_user!=0 AND rc.rc_bot=0"
+checkuser_query = "SELECT cuc.cuc_user_text, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>%s AND cuc.cuc_timestamp<%s"
+
+def construct_rc_query(db_name):
+	'''Constructs a query for the recentchanges table for a given month.
+	'''
+	return recentchanges_query%db_name
+
+def construct_cu_query(db_name,ts=None):
+	'''Constructs a query for the checkuser table for a given month.
+
+	:arg ts: str, timestamp '201205'. If None, last 30 days will be used. 
+	'''	
+	def wiki_timestamp(dt):
+		return datetime.strftime(dt,'%Y%m%d%H%M%S')
+
+	if ts:
+		y = int(ts[:4])
+		m = int(ts[4:])
+		start = datetime(y, m, 1)
+		end = datetime(y, m, calendar.monthrange(y,m)[1], 23, 59, 59)
+	else:
+		from datetime import timedelta
+		thirty = timedelta(days=30)
+		end = datetime.now()
+		start = end-thirty
+
+	return checkuser_query%(db_name,wiki_timestamp(start),wiki_timestamp(end))
 
 
 

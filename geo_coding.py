@@ -8,9 +8,11 @@ ETL for geo coding entries from the recentchanges table.
 
 '''
 
-import sys,os,logging
-import gzip
+import sys,os
+import gzip,codecs
 import operator
+import logging
+import json
 
 # if one sadly is not allowed to install python pagages....
 # sys.path.append('pygeoip/')
@@ -37,16 +39,14 @@ def extract(source,sep=None):
 
 	:arg source: iterable
 	:arg sep: str, separator for elements in source if they are strings. If None, elemtns won't be split
-	:returns: (editors,countries)
+	:returns: (editors,cities)
 	'''
 
 	editors = {}
-	countries = {}
+	cities = {}
 
 
-	for line in source:		
-
-		print line
+	for line in source:				
 
 		if sep:
 			res = line[:-1].split(sep)
@@ -72,7 +72,6 @@ def extract(source,sep=None):
 			if city=='' or city==' ':
 				city = "Unknown"
 
-
 		else:
 			# ip invalid
 			city = 'Invalid IP'
@@ -81,13 +80,13 @@ def extract(source,sep=None):
 
 
 		# country -> city data
-		if country not in countries:
-			countries[country] = {}
+		if country not in cities:
+			cities[country] = {}
 
-		if city in countries[country]:
-			countries[country][city] += 1
+		if city in cities[country]:
+			cities[country][city] += 1
 		else:
-			countries[country][city] = 1
+			cities[country][city] = 1
 
 		
 		# country -> editors data
@@ -104,84 +103,104 @@ def extract(source,sep=None):
 			editors[user][country]['edits'] = 1
 			# editors[user][country]['len_change'] = len_change
 
-	return (editors,countries)
+	return (editors,cities)
 
 ### TRANSFORM
-def transform(editors):
-	'''Aggregates the numbers of number of all,active,very active editors per country
+def transform(editors,countries,top_cities=10):
+	'''Transfrom step for both metrics.
 
-	Returns countries_editors dictionary:
+	Aggregates the numbers of number of all,active,very active editors per country. Returns countries_editors dictionary:
 
-		{country: [all editors, active editors, very active editors]}
+		{country: {"all":xx, "5+":xx, "100+":xx}}
+
+	Aggregates the number of edits per country and compiles a list of top cities with a relative weight compared to the most important city (which has a weight of 10)
+		{country: {"edits":xx, "top_cities":[(top_city_1,10.0), (top_city_2,xx), (top_city_3,xx)...]}}
+
+	:arg top_cities: Int, number of ranked cities. Optional, default 10
 
 	'''
 
+	### Editor activity
+
 	countries_editors = {}
 
-	for ed, ginfo in editors.items():
+	for ed, ginfo in editors.iteritems():
 
-		for country , einfo in ginfo.items():
+		for country , einfo in ginfo.iteritems():
 
 			if country not in countries_editors:
-				countries_editors[country] = [0,0,0]
+				countries_editors[country] = {"all":0,"5+":0,"100+":0}
 
 			if einfo['edits'] > 0:
-				countries_editors[country][0] +=1 
+				countries_editors[country]["all"] +=1 
 				if einfo['edits'] >= 5:
-					countries_editors[country][1] +=1
+					countries_editors[country]["5+"] +=1
 					if einfo['edits'] >= 100:
-						countries_editors[country][2] +=1 
+						countries_editors[country]["100+"] +=1 
 
-	return countries_editors
+	### City rankings
+
+	countries_cities = {}	
+	for country,cities in countries.iteritems():
+		
+		countries_cities[country] = {}
+
+		city_info_sorted = sorted(cities.iteritems(),key=operator.itemgetter(1),reverse=True)	
+		totaledits = sum([c[1] for c in city_info_sorted])
+		countries_cities[country]["edits"] = totaledits
+ 		### calculating percentages
+		# city_info_sorted_str = sep.join([ sep.join((c[0] , '%.1f%%'%(100.*c[1]/totaledits))) for c in city_info_sorted[:top_cities]])
+		### pseudo-confuscation for 1 to 10 scale
+		city_info_sorted_aggr = [ (c[0] , (10.*c[1]/city_info_sorted[0][1])) for c in city_info_sorted[:top_cities]]
+		
+		countries_cities[country]["top_cities"] = city_info_sorted_aggr
+		
+
+		
+
+	return countries_editors,countries_cities
 
 ### LOAD
-def load(lang,countries_editors,countries_cities,output_dir='.'):
-	'''Stores two metrics:
+def load(lang,countries_editors,countries_cities,output_dir='.',sep = '\t'):
+	'''Stores two metrics in tsv format:
 
 		1. Country, total editors, total active editors (5+), total very active editors (100+)
 		2. Country, total number of edits, top 10 cities, percentage of total edits from each city  
 
+	The same data is also stored in json format.
+
 	:arg lang: str, language 
 	:arg countries_editors: dict, editor info per country
 	:arg countries_cities: dict, city info per country 
+	:arg sep: str, separator used for datafile. Optional, default '\\t'.
 	'''
 
+	# Editor activity per country
+	fn = os.path.join(output_dir,'%s_geo_editors.json'%lang)
+	f = codecs.open(fn, encoding='utf-8',mode='w')
+	json.dump(countries_editors,f,sort_keys=True,ensure_ascii=False)
+
 	fn = os.path.join(output_dir,'%s_geo_editors.tsv'%lang)
-	# f = codecs.open('editor_geo.csv', encoding='utf-8',mode='w')
-	f = open(fn,'w')
-	sep = '\t'
-
+	f = codecs.open(fn, encoding='utf-8',mode='w')
+	# f = open(fn,'w')
 	for country in sorted(countries_editors.keys()):
-
 		info = countries_editors[country]
-
-
-		f.write('%s%s%s\n'%(country,sep,sep.join(['%s'%i for i in info])))
-
+		fields = [country,str(info["all"]),str(info["5+"]),str(info["100+"])]
+		f.write(sep.join(fields)+'\n')
 	f.close()
 
+
+	# Top contributor cities per country
+
+	fn = os.path.join(output_dir,'%s_geo_cities.json'%lang)
+	f = codecs.open(fn, encoding='utf-8',mode='w')
+	json.dump(countries_cities,f,sort_keys=True,ensure_ascii=False)
+
 	fn = os.path.join(output_dir,'%s_geo_cities.tsv'%lang)
-	f = open(fn,'w')
-
-
+	f = codecs.open(fn, encoding='utf-8',mode='w')
+	# f = open(fn,'w')
 	for country in sorted(countries_cities.keys()):
-
-		cities = countries_cities[country]
-
-		city_info_sorted = sorted(cities.iteritems(),key=operator.itemgetter(1),reverse=True)
-		
-		totaledits = sum([c[1] for c in city_info_sorted])
-		
-		city_info_sorted_str = sep.join([ sep.join((c[0] , '%.1f%%'%(100.*c[1]/totaledits))) for c in city_info_sorted[:100]])
-
-
-		pre = '%s%s%s'%(country,sep,totaledits)
-
-		f.write('%s%s%s\n'%(pre,sep,city_info_sorted_str))
-
-
-
-
-
-
+		info = countries_cities[country]
+		fields = [country,str(info["edits"])]+[sep.join([c_i[0],'%.1f'%c_i[1]]	) for c_i in info["top_cities"]]
+		f.write(sep.join(fields)+'\n')
 

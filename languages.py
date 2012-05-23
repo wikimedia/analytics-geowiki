@@ -1,5 +1,5 @@
 import os
-
+import logging
 
 data_suffix = '_geo'
 out_suffix = '_geo'
@@ -18,7 +18,7 @@ def get_done_languages(d,suffix):
 			path = os.path.join(root,f)
 			size =  os.path.getsize(path)
 			if size <= 50:
-				print '%s is %s bytes small!'%(path,size) 
+				logging.warning('%s is %s bytes small!'%(path,size))
 				# os.system('rm %s'%path)
 			if f[-3:]=='csv' or f[-6:]=='tsv.gz':
 				done.append(f.split(suffix)[0])

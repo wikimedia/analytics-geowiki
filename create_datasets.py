@@ -8,10 +8,13 @@ Export geo location data from the recent_changes table. The script is running mu
 
 """
 
-from multiprocessing import Pool
 import os
+from multiprocessing import Pool
+import logging
+logging.basicConfig(level=logging.INFO)
 
-if only we could use a mysql driver....
+
+# if only we could use a mysql driver....
 try:
     import MySQLdb,MySQLdb.cursors
 except:
@@ -25,17 +28,25 @@ data_dir = './data'
 output_dir = './output'
 
 
-def mysql_cursor(lang):
+def mysql_resultset(lang):
 
 	host_name = mysql_config.get_host_name(lang)
 	db_name = mysql_config.get_db_name(lang)
 
 	# mysql query to export recent changes data
-	query = mysql_config.recentchanges_query%db_name
+	# query = mysql_config.construct_rc_query(db_name)
+	query = mysql_config.construct_cu_query(db_name,'201204')
 
-	db = MySQLdb.connect(host=host_name,user=user_name,passwd=pw)
+	logging.info("SQL query for %s:\n\t%s"%(db_name,query))
+
+	db = MySQLdb.connect(host=host_name,read_default_file=os.path.expanduser('~/.my.cnf'))
 	SScur = db.cursor(MySQLdb.cursors.SSCursor)
-	return SScur.execute(query)
+
+	logging.info('Connected to [db:%s,host:%s]'%(db_name,host_name))
+
+	SScur.execute(query)
+
+	return SScur
 
 
 def dump_data_iterator(lang,compressed=False):
@@ -84,7 +95,7 @@ def dump_data_iterator(lang,compressed=False):
 
 def create_dataset(lang):
 
-	logging.info('CREATING DATASET FOR ',lang)
+	logging.info('CREATING DATASET FOR %s'%lang)
 
 	# EXTRACT
 
@@ -95,11 +106,11 @@ def create_dataset(lang):
 	# OR
 
 	### use a server-side cursor to iterate the result set
-	source = mysql_cursor(lang)
-	(editors,countries_cities) = gc.extract(source)
+	source = mysql_resultset(lang)
+	(editors,cities) = gc.extract(source)
 
 	# TRANSFORM (only for editors)
-	countries_editors = gc.transform(editors)
+	countries_editors,countries_cities = gc.transform(editors,cities)
 
 	# LOAD 
 	gc.load(lang,countries_editors,countries_cities,output_dir)
@@ -107,25 +118,26 @@ def create_dataset(lang):
 	# delete the exported data
 	# os.system('rm %s'%fn)
 
-	logging.info('DONE : ',lang)
+	logging.info('DONE : %s'%lang)
 
 
 if __name__ == '__main__':
 
 	# check that data/output directories exist, create if not
 	# todo move into an arg parser
-	if not os.path.exists(data_dir):
-		os.mkdir(data_dir)
+	# if not os.path.exists(data_dir):
+	# 	os.mkdir(data_dir)
 	if not os.path.exists(output_dir):
 		os.mkdir(output_dir)
 
-
-
-	p = Pool(3)
+	p = Pool(4)
 
 	# languages = languages.languages
-	languages =  ['ar']
+	languages =  ['ar','pt','hi','en']
 	p.map(create_dataset, languages)
+	
+	# test a language for debugging
+	# create_dataset('ar')	
 
 	logging.info('All languages done. Results are in %s folder'%(output_dir))
 
