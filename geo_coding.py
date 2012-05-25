@@ -62,11 +62,6 @@ def extract(source,filter_id,sep=None):
 			continue
 
 		ip = res[1]
-		# try:
-		# 	len_change = int(res[2])
-		# except:
-		# 	len_change = 0
-		# len_change = int(res[2]) if res[2] else 0
 
 		# geo lookup
 		record = gi.record_by_addr(ip)

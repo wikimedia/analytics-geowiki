@@ -23,7 +23,8 @@ output_dir = './output'
 
 
 def mysql_resultset(wp_pr):
-
+	'''Returns an iterable MySql resultset
+	'''
 	
 	# query = mysql_config.construct_rc_query(db_name)	
 	query = mysql_config.construct_cu_query(wp_pr,'201204')
@@ -48,7 +49,7 @@ def retrieve_bot_list(wp_pr):
 	cur = mysql_config.get_cursor(wp_pr,server_side=False)
 	cur.execute(query)
 
-	return set(cur)
+	return set(c[0] for c in cur)
 
 
 
@@ -60,9 +61,6 @@ def dump_data_iterator(wp_pr,compressed=False):
 
 	host_name = mysql_config.get_host_name(wp_pr)
 	db_name = mysql_config.get_db_name(wp_pr)
-	# user_name = mysql_config.user_name
-	# pw = mysql_config.password
-
 	
 	# mysql query to export recent changes data
 	query = mysql_config.recentchanges_query%db_name
@@ -108,7 +106,7 @@ def create_dataset(wp_pr):
 
 	### use a server-side cursor to iterate the result set
 	source = mysql_resultset(wp_pr)
-	bots = retrieve_bot_list(wp_pr)
+	bots = retrieve_bot_list(wp_pr)	
 	(editors,cities) = gc.extract(source=source,filter_id=bots)
 
 	# TRANSFORM (only for editors)

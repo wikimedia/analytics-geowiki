@@ -37,14 +37,14 @@ def construct_bot_query(wp_pr):
 	return bot_query%(get_db_name(wp_pr))
 
 # mysql query for the recent changes data
-recentchanges_query = "SELECT rc.rc_user_text, rc.rc_ip FROM %s.recentchanges rc WHERE rc.rc_namespace=0 AND rc.rc_user!=0 AND rc.rc_bot=0"
+recentchanges_query = "SELECT rc.rc_user, rc.rc_ip FROM %s.recentchanges rc WHERE rc.rc_namespace=0 AND rc.rc_user!=0 AND rc.rc_bot=0"
 def construct_rc_query(wp_pr):
 	'''Constructs a query for the recentchanges table for a given month.
 	'''
 	return recentchanges_query%get_db_name(wp_pr)
 
 # mysql query for the check user data
-checkuser_query = "SELECT cuc.cuc_user_text, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>%s AND cuc.cuc_timestamp<%s"
+checkuser_query = "SELECT cuc.cuc_user, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>%s AND cuc.cuc_timestamp<%s"
 def construct_cu_query(wp_pr,ts=None):
 	'''Constructs a query for the checkuser table for a given month.
 
@@ -94,7 +94,7 @@ def get_db_connection(wp_pr):
 	db_name = get_db_name(wp_pr)
 
 	db = MySQLdb.connect(host=host_name,read_default_file=os.path.expanduser('~/.my.cnf'))
-
+	logging.info('Connected to [db:%s,host:%s]'%(db_name,host_name))
 	return db
 
 def get_cursor(wp_pr,server_side=False):
@@ -105,7 +105,5 @@ def get_cursor(wp_pr,server_side=False):
 	'''
 	db = get_db_connection(wp_pr)
 	cur = db.cursor(MySQLdb.cursors.SSCursor) if server_side else db.cursor(MySQLdb.cursors.Cursor)
-
-	logging.info('Connected to [db:%s,host:%s]'%(db_name,host_name))
-
+	
 	return cur
