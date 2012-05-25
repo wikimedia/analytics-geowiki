@@ -1,7 +1,5 @@
 """Configuration file for the MediaWiki MySql databases.
 
-The method `get_host_name(wp_pr)` returns a host name for the Wikipedia project passed as parameter.
-
 The login info has to to be configured by creating the file `~/.my.cnf` with the following conent:
 
 	[client]

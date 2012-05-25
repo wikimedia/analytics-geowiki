@@ -9,7 +9,7 @@ This module can be used to generate datasets that aggregate geographical informa
 
 * Each row shows a country and total number of edits, followed by a list of the top ten cities and the percentage of edits made in that city. The files are tab seperated, there is one file per Wikipedia project (e.g. enwp).
 
-	`Country, total edits, [city, percentage of total edits from city]`
+	`Country, total edits, [city, {0.0-10.0} weight compared to largest contributor city]`
 
 ## Privacy
 
@@ -30,12 +30,23 @@ One needs access to IP addresses to create geo coded datasets from wikipedia. [W
 
 In 'create_datasets.py', set the following directories.
 
-* `data` : intermediate storage of exported mysql data
+<!-- * `data` : intermediate storage of exported mysql data -->
 * `output` : generated geo coded data files
 
 ### Mysql
 
-Configure access to the mysql databases by configuring the `mysql_config.py` file.
+Configure access to the mysql databases by configuring the `mysql_config.py` file. The login info has to to be configured by creating the file `~/.my.cnf` with the following conent:
+
+	[client]
+	user = USERNAME
+	password = PASSWORD
+
+The data is retrieved using a server-side mySQLdb cursor. The tables queried are:
+* [checkuser](http://www.mediawiki.org/wiki/Extension:CheckUser) table, `cu_changes` (Main)
+* [recentchanges](http://www.mediawiki.org/wiki/Manual:Recentchanges_table) table (Alternative)
+* [user_groups](http://www.mediawiki.org/wiki/Manual:User_groups_table) table. For bot classification.
+
+No joins are performed. 
 
 ### GeoIP
 
@@ -54,7 +65,6 @@ Simply run:
 * Add an arg parser to replace most of the configuration
 * Add date specific information in the data files and the file names
 * Tests!
-* Instead of the `recentchanges` table, could we use the [checkuser](http://www.mediawiki.org/wiki/Extension:CheckUser) table?
 * Create a package 
 * Use logging module
 * Can we use a server side cursur (i.e. using the python mysql drivers)?

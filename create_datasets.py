@@ -39,17 +39,17 @@ def mysql_resultset(wp_pr):
 def retrieve_bot_list(wp_pr):
 	'''Returns a set of all known bots for `wp_pr`.
 	'''	
-	bot_fn = '%s_bot.tsv'%wp_pr
+
+	erikZ_bots = set(int(b) for b in open('data/erikZ.bots','r'))
 
 	query = mysql_config.construct_bot_query(wp_pr)
-
-	# host_name = mysql_config.get_host_name(wp_pr)
-	# bot_command = 'mysql -h %s -e "%s" > %s; sed -i "1d" %s'%(host_name,query,bot_fn,bot_fn)
-
 	cur = mysql_config.get_cursor(wp_pr,server_side=False)
 	cur.execute(query)
+	pr_bots = set(c[0] for c in cur)
 
-	return set(c[0] for c in cur)
+	logging.info("There are %s additional bots not in ErikZ bot file"%(len(pr_bots-erikZ_bots)))
+
+	return erikZ_bots.union(pr_bots)
 
 
 
