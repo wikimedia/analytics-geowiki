@@ -25,10 +25,9 @@ output_dir = './output'
 def mysql_resultset(wp_pr):
 	'''Returns an iterable MySql resultset
 	'''
-	
 	# query = mysql_config.construct_rc_query(db_name)	
 	query = mysql_config.construct_cu_query(wp_pr,'201204')
-	logging.info("SQL query for %s:\n\t%s"%(wp_pr,query))
+	# logging.info("SQL query for %s:\n\t%s"%(wp_pr,query))
 
 	cur = mysql_config.get_cursor(wp_pr,server_side=True)
 	cur.execute(query)
@@ -40,18 +39,17 @@ def retrieve_bot_list(wp_pr):
 	'''Returns a set of all known bots for `wp_pr`.
 	'''	
 
-	erikZ_bots = set(int(b) for b in open('data/erikZ.bots','r'))
+	erikZ_bots = set(long(b) for b in open('data/erikZ.bots','r'))
 
 	query = mysql_config.construct_bot_query(wp_pr)
 	cur = mysql_config.get_cursor(wp_pr,server_side=False)
 	cur.execute(query)
+
 	pr_bots = set(c[0] for c in cur)
 
-	logging.info("There are %s additional bots not in ErikZ bot file"%(len(pr_bots-erikZ_bots)))
+	logging.info("%s: There are %s additional bots (from %s) not in ErikZ bot file"%(wp_pr,len(pr_bots-erikZ_bots),len(pr_bots)))
 
 	return erikZ_bots.union(pr_bots)
-
-
 
 def dump_data_iterator(wp_pr,compressed=False):
 	'''Dumps the needed entries from the recent changes table for project `wp_pr`.
@@ -130,7 +128,7 @@ if __name__ == '__main__':
 	if not os.path.exists(output_dir):
 		os.mkdir(output_dir)
 
-	p = Pool(4)
+	p = Pool(2)
 
 	# languages = languages.languages
 	wp_projects =  ['ar','pt','hi','en']
