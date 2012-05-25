@@ -27,7 +27,7 @@ gi = pygeoip.GeoIP(geoIP_fn, pygeoip.MEMORY_CACHE)
 # print gi.record_by_addr('178.192.86.113')
 
 ### EXTRACT
-def extract(source,sep=None):
+def extract(source,filter_id,sep=None):
 	'''Extracts geo data on editor and country/city level from the data source.
 
 	The source is a compressed mysql result set with the following format.
@@ -38,6 +38,7 @@ def extract(source,sep=None):
 		s[2] == len changed
 
 	:arg source: iterable
+	:arg filter_id: set, containing user id that should be filtered, e.g. bots. Set can be empty in which case nothing will be filtered.
 	:arg sep: str, separator for elements in source if they are strings. If None, elemtns won't be split
 	:returns: (editors,cities)
 	'''
@@ -48,12 +49,18 @@ def extract(source,sep=None):
 
 	for line in source:				
 
+		# a line can be a tuple from a sql resultset or a '\n' escaped line in a text file
 		if sep:
 			res = line[:-1].split(sep)
 		else:
 			res = line
 		
 		user = res[0]
+
+		# filter!
+		if user in filter_id:
+			continue
+
 		ip = res[1]
 		# try:
 		# 	len_change = int(res[2])

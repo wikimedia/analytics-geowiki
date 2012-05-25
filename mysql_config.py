@@ -4,6 +4,10 @@ The method `get_host_name(wp_pr)` returns a host name for the Wikipedia project 
 
 The login info has to to be configured by creating the file `~/.my.cnf` with the following conent:
 
+	[client]
+	user = USERNAME
+	password = PASSWORD
+
 
 """
 import os
@@ -12,25 +16,36 @@ import logging
 from datetime import datetime
 import calendar
 
+# if only we could use a mysql driver....
+try:
+    import MySQLdb,MySQLdb.cursors
+except:
+    logging.error("Warning: SQL module MySQLdb could not be imported.")
+
+
 
 # check for login credentials
 if not os.path.exists(os.path.expanduser("~/.my.cnf")):
-	logging.info("~/.my.cnf does not exist! MySql connection might fail.")
+	logging.error("~/.my.cnf does not exist! MySql connection might fail.")
 
 
-# user_name = 'wikiadmin'
-# password = 'test'
+# export all known bots for a wiki
+bot_query = "SELECT ug.ug_user FROM %s.user_groups ug WHERE ug.ug_group = 'bot'"
+def construct_bot_query(wp_pr):
+	'''Returns a set of all known bots for the `db_name` wp project database
+	'''
+	return bot_query%(get_db_name(wp_pr))
 
 # mysql query for the recent changes data
 recentchanges_query = "SELECT rc.rc_user_text, rc.rc_ip FROM %s.recentchanges rc WHERE rc.rc_namespace=0 AND rc.rc_user!=0 AND rc.rc_bot=0"
-checkuser_query = "SELECT cuc.cuc_user_text, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>%s AND cuc.cuc_timestamp<%s"
-
-def construct_rc_query(db_name):
+def construct_rc_query(wp_pr):
 	'''Constructs a query for the recentchanges table for a given month.
 	'''
-	return recentchanges_query%db_name
+	return recentchanges_query%get_db_name(wp_pr)
 
-def construct_cu_query(db_name,ts=None):
+# mysql query for the check user data
+checkuser_query = "SELECT cuc.cuc_user_text, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>%s AND cuc.cuc_timestamp<%s"
+def construct_cu_query(wp_pr,ts=None):
 	'''Constructs a query for the checkuser table for a given month.
 
 	:arg ts: str, timestamp '201205'. If None, last 30 days will be used. 
@@ -49,7 +64,7 @@ def construct_cu_query(db_name,ts=None):
 		end = datetime.now()
 		start = end-thirty
 
-	return checkuser_query%(db_name,wiki_timestamp(start),wiki_timestamp(end))
+	return checkuser_query%(get_db_name(wp_pr),wiki_timestamp(start),wiki_timestamp(end))
 
 
 
@@ -71,3 +86,26 @@ def get_host_name(wp_pr):
 	cluster = cluster_mapping[wiki] if wiki in cluster_mapping else 's3'
 	host = db_mapping[cluster]
 	return '%s.eqiad.wmnet'%host
+
+def get_db_connection(wp_pr):
+	'''Returns a MySql connection to `wp_pr`, e.g. `en`'''
+
+	host_name = get_host_name(wp_pr)
+	db_name = get_db_name(wp_pr)
+
+	db = MySQLdb.connect(host=host_name,read_default_file=os.path.expanduser('~/.my.cnf'))
+
+	return db
+
+def get_cursor(wp_pr,server_side=False):
+	'''Returns a server-side cursor
+
+	:arg wp_pr: str, Wikipedia project (e.g. `en`)
+	:arg server_side: bool, if True returns a server-side cursor. Default is False
+	'''
+	db = get_db_connection(wp_pr)
+	cur = db.cursor(MySQLdb.cursors.SSCursor) if server_side else db.cursor(MySQLdb.cursors.Cursor)
+
+	logging.info('Connected to [db:%s,host:%s]'%(db_name,host_name))
+
+	return cur

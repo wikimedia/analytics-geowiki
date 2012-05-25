@@ -14,12 +14,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 
-# if only we could use a mysql driver....
-try:
-    import MySQLdb,MySQLdb.cursors
-except:
-    logging.warning("Warning: SQL module MySQLdb could not be imported.")
-
 import geo_coding as gc
 import languages
 import mysql_config
@@ -28,35 +22,44 @@ data_dir = './data'
 output_dir = './output'
 
 
-def mysql_resultset(lang):
+def mysql_resultset(wp_pr):
 
-	host_name = mysql_config.get_host_name(lang)
-	db_name = mysql_config.get_db_name(lang)
+	
+	# query = mysql_config.construct_rc_query(db_name)	
+	query = mysql_config.construct_cu_query(wp_pr,'201204')
+	logging.info("SQL query for %s:\n\t%s"%(wp_pr,query))
 
-	# mysql query to export recent changes data
-	# query = mysql_config.construct_rc_query(db_name)
-	query = mysql_config.construct_cu_query(db_name,'201204')
+	cur = mysql_config.get_cursor(wp_pr,server_side=True)
+	cur.execute(query)
 
-	logging.info("SQL query for %s:\n\t%s"%(db_name,query))
-
-	db = MySQLdb.connect(host=host_name,read_default_file=os.path.expanduser('~/.my.cnf'))
-	SScur = db.cursor(MySQLdb.cursors.SSCursor)
-
-	logging.info('Connected to [db:%s,host:%s]'%(db_name,host_name))
-
-	SScur.execute(query)
-
-	return SScur
+	return cur
 
 
-def dump_data_iterator(lang,compressed=False):
-	'''Dumps the needed entries from the recent changes table for language lang.
+def retrieve_bot_list(wp_pr):
+	'''Returns a set of all known bots for `wp_pr`.
+	'''	
+	bot_fn = '%s_bot.tsv'%wp_pr
+
+	query = mysql_config.construct_bot_query(wp_pr)
+
+	# host_name = mysql_config.get_host_name(wp_pr)
+	# bot_command = 'mysql -h %s -e "%s" > %s; sed -i "1d" %s'%(host_name,query,bot_fn,bot_fn)
+
+	cur = mysql_config.get_cursor(wp_pr,server_side=False)
+	cur.execute(query)
+
+	return set(cur)
+
+
+
+def dump_data_iterator(wp_pr,compressed=False):
+	'''Dumps the needed entries from the recent changes table for project `wp_pr`.
 
 	:returns: Iterable open file object 
 	'''
 
-	host_name = mysql_config.get_host_name(lang)
-	db_name = mysql_config.get_db_name(lang)
+	host_name = mysql_config.get_host_name(wp_pr)
+	db_name = mysql_config.get_db_name(wp_pr)
 	# user_name = mysql_config.user_name
 	# pw = mysql_config.password
 
@@ -66,20 +69,18 @@ def dump_data_iterator(lang,compressed=False):
 
 
 	if compressed:
-		output_fn = os.path.join(data_dir,'%s_geo.tsv.gz'%lang)	
+		output_fn = os.path.join(data_dir,'%s_geo.tsv.gz'%wp_pr)	
 		# export_command = ['mysql', '-h', host_name,  '-u%s'%user_name,  '-p%s'%pw ,'-e', "'%s'"%query, '|', 'gzip', '-c' ,'>', output_fn]
 		export_command = ['mysql', '-h', host_name ,'-e', "'%s'"%query, '|', 'gzip', '-c' ,'>', output_fn]
 
 	else:
-		output_fn = os.path.join(data_dir,'%s_geo.tsv'%lang)		
+		output_fn = os.path.join(data_dir,'%s_geo.tsv'%wp_pr)		
 		# export_command = ['mysql', '-h', host_name,  '-u%s'%user_name,  '-p%s'%pw ,'-e', "'%s'"%query, '>', output_fn]
 		export_command = ['mysql', '-h', host_name ,'-e', "'%s'"%query, '>', output_fn]
 
 
-
 	# use problematic os.system instead of subprocess
 	os.system(' '.join(export_command))	
-
 
 	if compressed:
 		source =  gzip.open(output_fn, 'r')
@@ -93,32 +94,33 @@ def dump_data_iterator(lang,compressed=False):
 
 
 
-def create_dataset(lang):
+def create_dataset(wp_pr):
 
-	logging.info('CREATING DATASET FOR %s'%lang)
+	logging.info('CREATING DATASET FOR %s'%wp_pr)
 
 	# EXTRACT
 
 	### export the data from mysql by dumping into a temp file
-	# source = dump_data_iterator(lang,compressed=True)		
-	# (editors,countries_cities) = gc.extract(source,sep='\t')
+	# source = dump_data_iterator(wp_pr,compressed=True)		
+	# (editors,countries_cities) = gc.extract(source=source,filter_id=(),sep='\t')
 	
 	# OR
 
 	### use a server-side cursor to iterate the result set
-	source = mysql_resultset(lang)
-	(editors,cities) = gc.extract(source)
+	source = mysql_resultset(wp_pr)
+	bots = retrieve_bot_list(wp_pr)
+	(editors,cities) = gc.extract(source=source,filter_id=bots)
 
 	# TRANSFORM (only for editors)
 	countries_editors,countries_cities = gc.transform(editors,cities)
 
 	# LOAD 
-	gc.load(lang,countries_editors,countries_cities,output_dir)
+	gc.load(wp_pr,countries_editors,countries_cities,output_dir)
 
 	# delete the exported data
 	# os.system('rm %s'%fn)
 
-	logging.info('DONE : %s'%lang)
+	logging.info('DONE : %s'%wp_pr)
 
 
 if __name__ == '__main__':
@@ -133,11 +135,11 @@ if __name__ == '__main__':
 	p = Pool(4)
 
 	# languages = languages.languages
-	languages =  ['ar','pt','hi','en']
-	p.map(create_dataset, languages)
+	wp_projects =  ['ar','pt','hi','en']
+	p.map(create_dataset, wp_projects)
 	
-	# test a language for debugging
+	# test a project for debugging
 	# create_dataset('ar')	
 
-	logging.info('All languages done. Results are in %s folder'%(output_dir))
+	logging.info('All projects done. Results are in %s folder'%(output_dir))
 
