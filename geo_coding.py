@@ -72,6 +72,10 @@ def extract(source,sep=None):
 			if city=='' or city==' ':
 				city = "Unknown"
 
+			if country=='' or country==' ':
+				country = "Unknown"
+
+
 		else:
 			# ip invalid
 			city = 'Invalid IP'
