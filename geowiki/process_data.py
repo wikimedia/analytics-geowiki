@@ -23,15 +23,15 @@ output_dir = None
 timestamp = None
 geoIP_db = None
 n_threads = None
+wp_projects = None
 
 
-def main():
+def run_parallel():
     '''
-    
+    Start `n_threads` processes that work through the list of projects `wp_projects`
     '''
     p = Pool(n_threads)
 
-    # languages = languages.languages
     # wp_projects =  ['ar','pt','hi','en']
     p.map(process_data, wp_projects)
     
@@ -39,9 +39,6 @@ def main():
     # process_data('ar')  
 
     logger.info('All projects done. Results are in %s'%(output_dir))
-
-
-
 
 
 def mysql_resultset(wp_pr,ts=None):
@@ -148,7 +145,12 @@ def process_data(wp_pr):
     logger.info('Done : %s'%wp_pr)
 
 
-if __name__ == '__main__':
+
+def main():
+    """Entry point for geo coding package
+    """
+    global output_dir,wp_projects,geoIP_db,n_threads,timestamp
+
     parser = argparse.ArgumentParser(
         description="""Geo coding editor activity on Wikipedia
         """
@@ -224,4 +226,7 @@ if __name__ == '__main__':
     n_threads=args.threads
     timestamp=args.timestamp
 
+    run_parallel()
+
+if __name__ == '__main__':
     main()
