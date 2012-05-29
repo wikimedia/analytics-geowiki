@@ -134,7 +134,7 @@ def process_data(wp_pr):
     ### use a server-side cursor to iterate the result set
     source = mysql_resultset(wp_pr,ts=timestamp)
     bots = retrieve_bot_list(wp_pr) 
-    (editors,cities) = gc.extract(source=source,filter_id=bots,geoIP_fn = geoIP_db)
+    (editors,cities) = gc.extract(source=source,filter_ids=bots,geoIP_fn = geoIP_db)
 
     # TRANSFORM (only for editors)
     countries_editors,countries_cities = gc.transform(editors,cities)
