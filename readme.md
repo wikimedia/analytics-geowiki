@@ -28,7 +28,7 @@ One needs access to IP addresses to create geo coded datasets from wikipedia. [W
 
 ### Directories
 
-In 'create_datasets.py', set the following directories.
+In 'process_data.py', set the following directories.
 
 <!-- * `data` : intermediate storage of exported mysql data -->
 * `output` : generated geo coded data files
@@ -58,15 +58,12 @@ Point `geo_coding.geoIP_fn` to the GeoIP City Database.
 
 Simply run:
 
-	python create_datasets.py
+	python process_data.py
 
 ## Todo
 
-* Add an arg parser to replace most of the configuration
 * Add date specific information in the data files and the file names
 * Tests!
 * Create a package 
-* Use logging module
-* Can we use a server side cursur (i.e. using the python mysql drivers)?
 
 

@@ -8,24 +8,17 @@ The login info has to to be configured by creating the file `~/.my.cnf` with the
 
 
 """
-import os
-import logging
+import os,logging
 
-from datetime import datetime
+from datetime import datetime,timedelta
 import calendar
 
-# if only we could use a mysql driver....
 try:
-    import MySQLdb,MySQLdb.cursors
+	import MySQLdb,MySQLdb.cursors
 except:
-    logging.error("Warning: SQL module MySQLdb could not be imported.")
+	pass
 
-
-
-# check for login credentials
-if not os.path.exists(os.path.expanduser("~/.my.cnf")):
-	logging.error("~/.my.cnf does not exist! MySql connection might fail.")
-
+logger = logging.getLogger(__name__)
 
 # export all known bots for a wiki
 bot_query = "SELECT ug.ug_user FROM %s.user_groups ug WHERE ug.ug_group = 'bot'"
@@ -44,7 +37,13 @@ def construct_rc_query(wp_pr):
 # mysql query for the check user data
 checkuser_query = "SELECT cuc.cuc_user, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>%s AND cuc.cuc_timestamp<%s"
 def construct_cu_query(wp_pr,ts=None):
-	'''Constructs a query for the checkuser table for a given month.
+	'''Constructs a query for the checkuser table for a given month. The timestamp `ts` can be either:
+		* `201205`, data for the month of May 2012
+		* `20120525`, the last 30 days from the day passed.
+		* None, last 30 days from now()
+
+	Note:	
+		The checkuser `cu_changes` table contains data for the last three month only!
 
 	:arg ts: str, timestamp '201205'. If None, last 30 days will be used. 
 	'''	
@@ -52,12 +51,19 @@ def construct_cu_query(wp_pr,ts=None):
 		return datetime.strftime(dt,'%Y%m%d%H%M%S')
 
 	if ts:
-		y = int(ts[:4])
-		m = int(ts[4:])
-		start = datetime(y, m, 1)
-		end = datetime(y, m, calendar.monthrange(y,m)[1], 23, 59, 59)
-	else:
-		from datetime import timedelta
+		if len(ts)==6:
+			y = int(ts[:4])
+			m = int(ts[4:])
+			start = datetime(y, m, 1)
+			end = datetime(y, m, calendar.monthrange(y,m)[1], 23, 59, 59)
+		if len(ts)==8:
+			y = int(ts[:4])
+			m = int(ts[4:6])
+			d = int(ts[6:8])
+			thirty = timedelta(days=30)
+			end = datetime(y, m, d, 23, 59, 59)
+			start = end-thirty		
+	else:		
 		thirty = timedelta(days=30)
 		end = datetime.now()
 		start = end-thirty

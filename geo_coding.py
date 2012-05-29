@@ -8,26 +8,14 @@ ETL for geo coding entries from the recentchanges table.
 
 '''
 
-import sys,os
-import gzip,codecs
+import sys,os,logging
+import gzip,codecs,json
 import operator
-import logging
-import json
 
-# if one sadly is not allowed to install python pagages....
-# sys.path.append('pygeoip/')
 import pygeoip
 
-# Path to Geo IP database
-geoIP_fn = '/usr/share/GeoIP/GeoIPCity.dat'
-
-gi = pygeoip.GeoIP(geoIP_fn, pygeoip.MEMORY_CACHE)
-
-# test
-# print gi.record_by_addr('178.192.86.113')
-
 ### EXTRACT
-def extract(source,filter_id,sep=None):
+def extract(source,filter_ids,geoIP_fn,sep=None):
 	'''Extracts geo data on editor and country/city level from the data source.
 
 	The source is a compressed mysql result set with the following format.
@@ -38,10 +26,15 @@ def extract(source,filter_id,sep=None):
 		s[2] == len changed
 
 	:arg source: iterable
-	:arg filter_id: set, containing user id that should be filtered, e.g. bots. Set can be empty in which case nothing will be filtered.
+	:arg filter_ids: set, containing user id that should be filtered, e.g. bots. Set can be empty in which case nothing will be filtered.
+	:arg geoIP_fn: str, path to Geo IP database
 	:arg sep: str, separator for elements in source if they are strings. If None, elemtns won't be split
 	:returns: (editors,cities)
 	'''
+	gi = pygeoip.GeoIP(geoIP_fn, pygeoip.MEMORY_CACHE)
+
+	# test
+	# print gi.record_by_addr('178.192.86.113')
 
 	editors = {}
 	cities = {}
@@ -58,7 +51,7 @@ def extract(source,filter_id,sep=None):
 		user = res[0]
 
 		# filter!
-		if user in filter_id:
+		if user in filter_ids:
 			continue
 
 		ip = res[1]
@@ -172,7 +165,7 @@ def transform(editors,countries,top_cities=10):
 	return countries_editors,countries_cities
 
 ### LOAD
-def load(lang,countries_editors,countries_cities,output_dir='.',sep = '\t'):
+def load(wp_pr,countries_editors,countries_cities,output_dir='.',ts=None,sep = '\t'):
 	'''Stores two metrics in tsv format:
 
 		1. Country, total editors, total active editors (5+), total very active editors (100+)
@@ -180,22 +173,27 @@ def load(lang,countries_editors,countries_cities,output_dir='.',sep = '\t'):
 
 	The same data is also stored in json format.
 
-	:arg lang: str, language 
+	:arg wp_pr: str, wikipedia project 
 	:arg countries_editors: dict, editor info per country
 	:arg countries_cities: dict, city info per country 
 	:arg sep: str, separator used for datafile. Optional, default '\\t'.
 	'''
+	def get_filename(base,wp_pr,ts):
+		if ts:
+			return '_'.join([wp_pr,ts,base])
+		else:
+			return '_'.join([wp_pr,base])
 
 	# Editor activity per country
-	fn = os.path.join(output_dir,'%s_geo_editors.json'%lang)
+	fn = os.path.join(output_dir,get_filename('geo_editors.json',wp_pr,ts))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	countries_editors_json = {}
-	countries_editors_json['project'] = lang
+	countries_editors_json['project'] = wp_pr
 	countries_editors_json['world'] = countries_editors["World"]
 	countries_editors_json['countries'] = countries_editors
 	json.dump(countries_editors_json,f,sort_keys=True,ensure_ascii=False)
 
-	fn = os.path.join(output_dir,'%s_geo_editors.tsv'%lang)
+	fn = os.path.join(output_dir,get_filename('geo_editors.tsv',wp_pr,ts))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	# f = open(fn,'w')
 	for country in sorted(countries_editors.keys()):
@@ -207,14 +205,14 @@ def load(lang,countries_editors,countries_cities,output_dir='.',sep = '\t'):
 
 	# Top contributor cities per country
 
-	fn = os.path.join(output_dir,'%s_geo_cities.json'%lang)
+	fn = os.path.join(output_dir,get_filename('geo_cities.json',wp_pr,ts))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	countries_cities_json = {}
-	countries_cities_json['project'] = lang
+	countries_cities_json['project'] = wp_pr
 	countries_cities_json['countries'] = countries_cities
 	json.dump(countries_cities_json,f,sort_keys=True,ensure_ascii=False)
 
-	fn = os.path.join(output_dir,'%s_geo_cities.tsv'%lang)
+	fn = os.path.join(output_dir,get_filename('geo_cities.tsv',wp_pr,ts))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	# f = open(fn,'w')
 	for country in sorted(countries_cities.keys()):
