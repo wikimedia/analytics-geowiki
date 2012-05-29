@@ -56,9 +56,9 @@ def mysql_resultset(wp_pr,ts=None):
 
 def retrieve_bot_list(wp_pr):
     '''Returns a set of all known bots for `wp_pr`. Bots are not labeled in a chohesive manner for Wikipedia. We use the union of the bots used for the [Wikipedia statistics](stats.wikimedia.org/), stored in `./data/erikZ.bots` and the `user_group.ug_group='bot'` flag in the MySql database. 
-    ''' 
-
-    erikZ_bots = set(long(b) for b in open('data/erikZ.bots','r'))
+    '''     
+    bot_fn = os.path.join(os.path.split(__file__)[0], 'data', 'erikZ.bots')    
+    erikZ_bots = set(long(b) for b in open(bot_fn,'r'))
 
     query = mysql_config.construct_bot_query(wp_pr)
     cur = mysql_config.get_cursor(wp_pr,server_side=False)
