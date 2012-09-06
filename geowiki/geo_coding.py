@@ -9,13 +9,19 @@ ETL for geo coding entries from the recentchanges table.
 '''
 
 import sys,os,logging
-import gzip,codecs,json
+import datetime
+import gzip,codecs,json,re
 import operator
 
 import pygeoip
 
+logger = logging.getLogger(__name__)
+
+def valid_ip(ip):
+	return bool(re.match('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}',ip))
+
 ### EXTRACT
-def extract(source,filter_ids,geoIP_fn,sep=None):
+def extract(source,filter_ids,geoIP_db,sep=None):
 	'''Extracts geo data on editor and country/city level from the data source.
 
 	The source is a compressed mysql result set with the following format.
@@ -27,14 +33,18 @@ def extract(source,filter_ids,geoIP_fn,sep=None):
 
 	:arg source: iterable
 	:arg filter_ids: set, containing user id that should be filtered, e.g. bots. Set can be empty in which case nothing will be filtered.
-	:arg geoIP_fn: str, path to Geo IP database
+	:arg geoIP_db: str, path to Geo IP database
 	:arg sep: str, separator for elements in source if they are strings. If None, elemtns won't be split
 	:returns: (editors,cities)
 	'''
-	gi = pygeoip.GeoIP(geoIP_fn, pygeoip.MEMORY_CACHE)
+	logger.debug('entering, geoIP_db: %s' % (geoIP_db))
+	#gi = pygeoip.GeoIP(geoIP_db, pygeoip.MEMORY_CACHE)
+	gi = pygeoip.GeoIP(geoIP_db)
+	logger.debug('loaded cache')
 
 	# test
-	# print gi.record_by_addr('178.192.86.113')
+	print gi.record_by_addr('178.192.86.113')
+	logger.debug('passes test')
 
 	editors = {}
 	cities = {}
@@ -57,24 +67,27 @@ def extract(source,filter_ids,geoIP_fn,sep=None):
 		ip = res[1]
 
 		# geo lookup
-		record = gi.record_by_addr(ip)
+		if valid_ip(ip):
+			record = gi.record_by_addr(ip)
+		else:
+			# ip invalid
+			city = 'Invalid IP'
+			country = 'Invalid IP'
 
 		if record:
-
 			city = record['city'] 
 			country = record['country_name'] 
-
+			
 			if city=='' or city==' ':
 				city = "Unknown"
 
 			if country=='' or country==' ':
 				country = "Unknown"
-
-
 		else:
 			# ip invalid
 			city = 'Invalid IP'
 			country = 'Invalid IP'
+
 
 
 
@@ -165,7 +178,7 @@ def transform(editors,countries,top_cities=10):
 	return countries_editors,countries_cities
 
 ### LOAD
-def load(wp_pr,countries_editors,countries_cities,output_dir='.',ts=None,sep = '\t'):
+def load(wp_pr, countries_editors, countries_cities, args, sep = '\t'):
 	'''Stores two metrics in tsv format:
 
 		1. Country, total editors, total active editors (5+), total very active editors (100+)
@@ -176,24 +189,31 @@ def load(wp_pr,countries_editors,countries_cities,output_dir='.',ts=None,sep = '
 	:arg wp_pr: str, wikipedia project 
 	:arg countries_editors: dict, editor info per country
 	:arg countries_cities: dict, city info per country 
+	:arg args: argparse.Namespace global options object which stores things like start,end,outputdir,basename
 	:arg sep: str, separator used for datafile. Optional, default '\\t'.
 	'''
-	def get_filename(base,wp_pr,ts):
-		if ts:
-			return '_'.join([wp_pr,ts,base])
-		else:
-			return '_'.join([wp_pr,base])
+	def get_filename(base,wp_pr,_type,start,end, ext):
+		dt_fmt = '%Y%m%d'
+		return '%s.%s' % ('_'.join(
+				[base,
+				 wp_pr,
+				 _type,
+				 datetime.date.strftime(start,dt_fmt),
+				 datetime.date.strftime(end,dt_fmt)]), ext)
 
 	# Editor activity per country
-	fn = os.path.join(output_dir,get_filename('geo_editors.json',wp_pr,ts))
+	fn = os.path.join(args.output_dir, get_filename(args.basename, wp_pr, 'countries', args.start, args.end, 'json'))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	countries_editors_json = {}
 	countries_editors_json['project'] = wp_pr
 	countries_editors_json['world'] = countries_editors["World"]
+	del countries_editors['World'] #otherwise it shows up twice
 	countries_editors_json['countries'] = countries_editors
-	json.dump(countries_editors_json,f,sort_keys=True,ensure_ascii=False)
+	countries_editors_json['start'] = datetime.date.strftime(args.start, '%Y%m%d')
+	countries_editors_json['end'] = datetime.date.strftime(args.end, '%Y%m%d')
+	json.dump(countries_editors_json,f,sort_keys=True,indent=4,ensure_ascii=False)
 
-	fn = os.path.join(output_dir,get_filename('geo_editors.tsv',wp_pr,ts))
+	fn = os.path.join(args.output_dir, get_filename(args.basename, wp_pr, 'countries', args.start, args.end, 'csv'))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	# f = open(fn,'w')
 	for country in sorted(countries_editors.keys()):
@@ -205,14 +225,16 @@ def load(wp_pr,countries_editors,countries_cities,output_dir='.',ts=None,sep = '
 
 	# Top contributor cities per country
 
-	fn = os.path.join(output_dir,get_filename('geo_cities.json',wp_pr,ts))
+	fn = os.path.join(args.output_dir, get_filename(args.basename, wp_pr, 'cities', args.start, args.end, 'json'))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	countries_cities_json = {}
 	countries_cities_json['project'] = wp_pr
 	countries_cities_json['countries'] = countries_cities
-	json.dump(countries_cities_json,f,sort_keys=True,ensure_ascii=False)
+	countries_cities_json['start'] = datetime.date.strftime(args.start, '%Y%m%d')
+	countries_cities_json['end'] = datetime.date.strftime(args.end, '%Y%m%d')
+	json.dump(countries_cities_json,f,sort_keys=True,indent=4,ensure_ascii=False)
 
-	fn = os.path.join(output_dir,get_filename('geo_cities.tsv',wp_pr,ts))
+	fn = os.path.join(args.output_dir, get_filename(args.basename, wp_pr, 'cities', args.start, args.end, 'csv'))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	# f = open(fn,'w')
 	for country in sorted(countries_cities.keys()):

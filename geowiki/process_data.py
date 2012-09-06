@@ -5,48 +5,48 @@ Export geo location data from the recent_changes table. The script is running mu
 
 """
 
-import os,logging,argparse
-from datetime import datetime,timedelta
+import os,logging,argparse,pprint
+import datetime, dateutil, dateutil.relativedelta
 from multiprocessing import Pool
+import functools
 
 
 import geo_coding as gc
 import wikipedia_projects
 import mysql_config
+import traceback
 
 
 logger = logging.getLogger('process_data')
 
 
-# data_dir = './data'
-output_dir = None
-timestamp = None
-geoIP_db = None
-n_threads = None
-wp_projects = None
+class AutoDate(datetime.date):
+    def __init__(self, datestr):
+        dt = dateutil.parser.parser(datestr)
+        super(AutoDate,self).__init__(dt.date())
 
-
-def run_parallel():
+def run_parallel(args):
     '''
     Start `n_threads` processes that work through the list of projects `wp_projects`
     '''
-    p = Pool(n_threads)
+    p = Pool(args.threads)
 
     # wp_projects =  ['ar','pt','hi','en']
-    p.map(process_data, wp_projects)
+    partial_process_project = functools.partial(process_project, args)
+    p.map(partial_process_project, args.wp_projects)
     
     # test a project for debugging
-    # process_data('ar')  
+    # process_project('ar')  
 
-    logger.info('All projects done. Results are in %s'%(output_dir))
+    logger.info('All projects done. Results are in %s'%(args.output_dir))
 
 
-def mysql_resultset(wp_pr,ts=None):
+def mysql_resultset(wp_pr, start, end):
     '''Returns an iterable MySql resultset using a server side cursor that can be used to iterate the data. Alternavively, the `dump_data_iterator()` method dumps the data onto disk before  aggregation. 
     '''
     # query = mysql_config.construct_rc_query(db_name)  
-    query = mysql_config.construct_cu_query(wp_pr=wp_pr,ts=ts)
-    logger.debug("SQL query for %s for ts=%s:\n\t%s"%(wp_pr,ts,query))
+    query = mysql_config.construct_cu_query(wp_pr=wp_pr,start=start, end=end)
+    logger.debug("SQL query for %s for start=%s, end=%s:\n\t%s"%(wp_pr, start, end, query))
 
     cur = mysql_config.get_cursor(wp_pr,server_side=True)
     cur.execute(query)
@@ -116,40 +116,36 @@ def dump_data_iterator(wp_pr,compressed=False):
 
 
 
-def process_data(wp_pr):
+def process_project(args, wp_pr):
 
-    logger.info('CREATING DATASET FOR %s'%wp_pr)
+    try:
+        logger.info('CREATING DATASET FOR %s'%wp_pr)
 
-    # EXTRACT
+        ### use a server-side cursor to iterate the result set
+        source = mysql_resultset(wp_pr,args.start, args.end)
+        bots = retrieve_bot_list(wp_pr)
+        logger.debug('about to extract editor info type(source)=%s' % (type(source)))
+        (editors,cities) = gc.extract(source=source,filter_ids=bots,geoIP_db=args.geoIP_db)
+        logger.debug('extracted editors using geo client')
 
-    ### export the data from mysql by dumping into a temp file
-    # source = dump_data_iterator(wp_pr,compressed=True)        
-    # (editors,countries_cities) = gc.extract(source=source,filter_id=(),sep='\t')
-    
-    # OR
-    
-    ### use a server-side cursor to iterate the result set
-    source = mysql_resultset(wp_pr,ts=timestamp)
-    bots = retrieve_bot_list(wp_pr) 
-    (editors,cities) = gc.extract(source=source,filter_ids=bots,geoIP_fn = geoIP_db)
+        # TRANSFORM (only for editors)
+        countries_editors,countries_cities = gc.transform(editors,cities)
 
-    # TRANSFORM (only for editors)
-    countries_editors,countries_cities = gc.transform(editors,cities)
+        # LOAD 
+        gc.load(wp_pr,countries_editors,countries_cities,args)
 
-    # LOAD 
-    gc.load(wp_pr,countries_editors,countries_cities,output_dir=output_dir,ts=timestamp)
-
-    # delete the exported data
-    # os.system('rm %s'%fn)
-
-    logger.info('Done : %s'%wp_pr)
-
+        logger.info('Done : %s'%wp_pr)
+    except:
+        """
+        this is the function which the multiprocessing pool maps
+        for some reason the tracebacks don't make their way back to the main process
+        so it is best to print them out from within the process
+        """
+        logger.error(traceback.format_exc())
+        raise
 
 
-def main():
-    """Entry point for geo coding package
-    """
-    global output_dir,wp_projects,geoIP_db,n_threads,timestamp
+def parse_args():
 
     parser = argparse.ArgumentParser(
         description="""Geo coding editor activity on Wikipedia
@@ -157,27 +153,40 @@ def main():
     )
     parser.add_argument(
         '-o', '--output',
-        metavar='',
-        type=str, 
-        default='./output',
         dest = 'output_dir',
+        metavar='output_dir',
+        default='./output',
         help='<path> for output'
     )
     parser.add_argument(
+        '-b', '--basename',
+        default='geo_editors',
+        help='base output file name used in <BASENAME>_wp_pr_start_end.{json,tsv}'
+    )
+    parser.add_argument(
         '-p', '--wp',
-        metavar='',     
-        nargs='+',      
+        metavar='proj',     
+        nargs='+',
+#        required=True,
         dest = 'wp_projects',
         default = [],
         help='the wiki project to analyze (e.g. `en`)',
     )
     parser.add_argument(
-        '-t', '--timestamp',
+        '-s', '--start',
+        metavar='start_timestamp',
+        type=AutoDate,
+        default=None,
+        dest='start',
+        help="inclusive query start date. parses string with dateutil.parser.parse()"
+    )
+    parser.add_argument(
+        '-e', '--end',
         metavar='',
-        type=str,
-        default=datetime.strftime(datetime.now()-timedelta(days=1),'%Y%m%d'), 
-        dest='timestamp',
-        help="timestamp, '201205' or '20120518'. Default is yesterday."
+        type=AutoDate,
+        default=datetime.date.today() - datetime.timedelta(days=1),
+        dest='end',
+        help="inclusive query start date. parses string with dateutil.parser.parse()"
     )
     parser.add_argument(
         '-n', '--threads',
@@ -202,11 +211,18 @@ def main():
         help='<path> to geo IP database'
     )
 
+    # post processing
     args = parser.parse_args()
+    if not args.start:
+        args.start = args.end - dateutil.relativedelta.relativedelta(months=1)
 
-    # setting loging configuration  
-    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,format='%(asctime)s (%(levelname)s) : %(message)s', datefmt='%m/%d/%y %H:%M:%S')  
-    
+    wp_projects = wikipedia_projects.check_validity(args.wp_projects)   
+    if not wp_projects:
+        logging.error("No valid wikipedia projects.")
+
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+
     # check that output directory exists, create if not
     output_dir = args.output_dir    
     if not os.path.exists(output_dir):
@@ -215,18 +231,20 @@ def main():
     # check for mysql login credentials
     if not os.path.exists(os.path.expanduser("~/.my.cnf")):
         logger.error("~/.my.cnf does not exist! MySql connection might fail")
-        pass
+
+    logger.info('args: %s', pprint.pformat(args.__dict__,indent=2))
+    return args
 
 
-    wp_projects = wikipedia_projects.check_validity(args.wp_projects)   
-    if not wp_projects:
-        logging.error("No valid wikipedia projects.")
+def main():
+    """Entry point for geo coding package
+    """
 
-    geoIP_db = args.geoIP_db
-    n_threads=args.threads
-    timestamp=args.timestamp
-
-    run_parallel()
+    # setting loging configuration
+    logging.basicConfig(level=logging.INFO,format='[%(levelname)s]\t[%(processName)s]\t[%(filename)s:%(lineno)d]\t[%(funcName)s]\t%(message)s')  
+    
+    args = parse_args()
+    run_parallel(args)
 
 if __name__ == '__main__':
     main()
