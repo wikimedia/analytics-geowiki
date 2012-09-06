@@ -5,10 +5,10 @@ Export geo location data from the recent_changes table. The script is running mu
 
 """
 
-import os,logging,argparse,pprint
-import datetime, dateutil, dateutil.relativedelta
+import os,sys, logging,argparse,pprint
+import datetime, dateutil.relativedelta, dateutil.parser
 from multiprocessing import Pool
-import functools
+import functools, copy
 
 
 import geo_coding as gc
@@ -18,12 +18,6 @@ import traceback
 
 
 logger = logging.getLogger('process_data')
-
-
-class AutoDate(datetime.date):
-    def __init__(self, datestr):
-        dt = dateutil.parser.parser(datestr)
-        super(AutoDate,self).__init__(dt.date())
 
 def run_parallel(args):
     '''
@@ -35,9 +29,6 @@ def run_parallel(args):
     partial_process_project = functools.partial(process_project, args)
     p.map(partial_process_project, args.wp_projects)
     
-    # test a project for debugging
-    # process_project('ar')  
-
     logger.info('All projects done. Results are in %s'%(args.output_dir))
 
 
@@ -147,6 +138,10 @@ def process_project(args, wp_pr):
 
 def parse_args():
 
+    def auto_date(datestr):
+        #logging.debug('entering autodate: %s', datestr)
+        return dateutil.parser.parse(datestr).date()
+
     parser = argparse.ArgumentParser(
         description="""Geo coding editor activity on Wikipedia
         """
@@ -156,7 +151,8 @@ def parse_args():
         dest = 'output_dir',
         metavar='output_dir',
         default='./output',
-        help='<path> for output'
+        help='<path> for output.  program will actually make a subdirectory within the'
+        'provided directory named according to the start and end date'
     )
     parser.add_argument(
         '-b', '--basename',
@@ -175,7 +171,7 @@ def parse_args():
     parser.add_argument(
         '-s', '--start',
         metavar='start_timestamp',
-        type=AutoDate,
+        type=auto_date,
         default=None,
         dest='start',
         help="inclusive query start date. parses string with dateutil.parser.parse()"
@@ -183,11 +179,18 @@ def parse_args():
     parser.add_argument(
         '-e', '--end',
         metavar='',
-        type=AutoDate,
+        type=auto_date,
         default=datetime.date.today() - datetime.timedelta(days=1),
         dest='end',
         help="inclusive query start date. parses string with dateutil.parser.parse()"
     )
+    parser.add_argument(
+        '--daily',
+        action='store_true',
+        default=False,
+        help='including this flag instructs the program to run the query for each day between the '
+        'start and end date instead of only once for the entire range'
+        )
     parser.add_argument(
         '-n', '--threads',
         metavar='',
@@ -216,6 +219,11 @@ def parse_args():
     if not args.start:
         args.start = args.end - dateutil.relativedelta.relativedelta(months=1)
 
+    cu_start = datetime.date.today() - dateutil.relativedelta.relativedelta(days=90)
+    if args.start < cu_start:
+        logging.error('start date (%s) exceeds durability of check_user table (90 days, i.e. %s)', args.start, cu_start)
+        sys.exit()
+
     wp_projects = wikipedia_projects.check_validity(args.wp_projects)   
     if not wp_projects:
         logging.error("No valid wikipedia projects.")
@@ -223,10 +231,12 @@ def parse_args():
     if args.verbose:
         logger.setLevel(logging.DEBUG)
 
-    # check that output directory exists, create if not
-    output_dir = args.output_dir    
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+    # create run specific subdir
+    subdir = './%s_%s' % (datetime.date.strftime(args.start,'%Y%m%d'), 
+                          datetime.date.strftime(args.end,'%Y%m%d'))
+    args.output_dir = os.path.join(args.output_dir, subdir)
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
 
     # check for mysql login credentials
     if not os.path.exists(os.path.expanduser("~/.my.cnf")):
@@ -244,7 +254,16 @@ def main():
     logging.basicConfig(level=logging.INFO,format='[%(levelname)s]\t[%(processName)s]\t[%(filename)s:%(lineno)d]\t[%(funcName)s]\t%(message)s')  
     
     args = parse_args()
-    run_parallel(args)
+    if args.daily:
+        orig_start = copy.deepcopy(args.start)
+        orig_end = copy.deepcopy(args.end)
+        for day in [orig_start + datetime.timedelta(days=n) for n in range((orig_end - orig_start).days)]:
+            args.start = day
+            args.end = day + datetime.timedelta(days=1)
+            logging.info('running daily with args: %s', pprint.pformat(args.__dict__, indent=2))
+            run_parallel(args)
+    else:
+        run_parallel(args)
 
 if __name__ == '__main__':
     main()

@@ -12,7 +12,7 @@ setup(
     url                     = 'https://gerrit.wikimedia.org/r/gitweb?p=analytics/editor-geocoding.git;a=summary',
 
     author                  = 'Declerambaul',
-    author_email            = '{otto,dvanliere,fkaelin,dsc}@wikimedia.org',
+    author_email            = '{otto,dvanliere,fkaelin,dsc,erosen}@wikimedia.org',
 
     packages                = ['geowiki',],
     # package_dir           = {'geowiki': 'geowiki'},
@@ -23,6 +23,7 @@ setup(
                                 "argparse >=1.2.1",
                                 "MySQL-python >= 1.2.3",
                                 "pygeoip >= 0.2.3",
+                                "dateutil >= 2.1"
                                 ],
     entry_points            = {
                                 'console_scripts': ['geowiki = geowiki.process_data:main']

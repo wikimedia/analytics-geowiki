@@ -43,8 +43,8 @@ def extract(source,filter_ids,geoIP_db,sep=None):
 	logger.debug('loaded cache')
 
 	# test
-	print gi.record_by_addr('178.192.86.113')
-	logger.debug('passes test')
+	#logger.debug(gi.record_by_addr('178.192.86.113'))
+	#logger.debug('passes test')
 
 	editors = {}
 	cities = {}
@@ -67,6 +67,7 @@ def extract(source,filter_ids,geoIP_db,sep=None):
 		ip = res[1]
 
 		# geo lookup
+		record = None
 		if valid_ip(ip):
 			record = gi.record_by_addr(ip)
 		else:
