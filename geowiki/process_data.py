@@ -9,7 +9,7 @@ import os,sys, logging,argparse,pprint
 import datetime, dateutil.relativedelta, dateutil.parser
 from multiprocessing import Pool
 import functools, copy
-
+from operator import itemgetter
 
 import geo_coding as gc
 import wikipedia_projects
@@ -140,6 +140,31 @@ def process_project(args, wp_pr):
 
 def parse_args():
 
+    class WPFileAction(argparse.Action):
+        """
+        This action is fired upon parsing the --wpfiles option which should be a list of 
+        tsv file names.  Each named file should have the wp project codes as the first column
+        The codes will be used to query the databse with the name <ID>wiki.
+        
+        (Sorry about the nasty python functional syntax.)
+        """
+        def __call__(self, parser, namespace, values, option_string=None):
+            setattr(namespace, self.dest, list(set(
+                        map(
+                            itemgetter(0),
+                            map(
+                                str.split,
+                                filter(
+                                    lambda line: line[0] != '#',
+                                    reduce(
+                                        list.__add__, 
+                                        map(
+                                            file.readlines,
+                                            map(
+                                                open,
+                                                values)), [])))))))
+
+
     def auto_date(datestr):
         #logging.debug('entering autodate: %s', datestr)
         return dateutil.parser.parse(datestr).date()
@@ -165,10 +190,18 @@ def parse_args():
         '-p', '--wp',
         metavar='proj',     
         nargs='+',
-#        required=True,
         dest = 'wp_projects',
         default = [],
         help='the wiki project to analyze (e.g. `en`)',
+    )
+    parser.add_argument(
+        '--wpfiles',
+        metavar='wp_ids.tsv',
+        nargs='+',
+        dest = 'wp_projects',
+        action=WPFileAction,
+        help='list of tsv files in which the first column is the project id and the second column is the full name'
+        'will clobber any arguments passed in by --wp if --wpfiles appears later in list'
     )
     parser.add_argument(
         '-s', '--start',
@@ -264,6 +297,7 @@ def main():
 
             if not os.path.exists(os.path.join(args.output_dir,  args.subdir)):
                 os.makedirs(os.path.join(args.output_dir, args.subdir))
+            # log to file in subdir
             fh = logging.FileHandler(os.path.join(args.output_dir, args.subdir, 'log'))
             fh.setLevel(logging.DEBUG)
             fh.setFormatter(log_fmt)
