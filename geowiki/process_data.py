@@ -18,6 +18,8 @@ import traceback
 
 
 logger = logging.getLogger('process_data')
+log_fmt = logging.Formatter('[%(levelname)s]\t[%(processName)s]\t[%(filename)s:%(lineno)d]\t[%(funcName)s]\t%(message)s')
+logger.setLevel(logging.DEBUG)
 
 def run_parallel(args):
     '''
@@ -200,10 +202,9 @@ def parse_args():
         help="number of threads (default=2)"
     )
     parser.add_argument(
-        '-v', '--verbose',
+        '-q', '--quiet',
         action='store_true',
-        dest='verbose', 
-        help="logging level"
+        help="set logging level to INFO rather than DEBUG"
     )
     parser.add_argument(
         '-g', '--geoDB',
@@ -228,15 +229,15 @@ def parse_args():
     if not wp_projects:
         logging.error("No valid wikipedia projects.")
 
-    if args.verbose:
-        logger.setLevel(logging.DEBUG)
+    if args.quiet:
+        logger.setLevel(logging.INFO)
 
-    # create run specific subdir
-    subdir = './%s_%s' % (datetime.date.strftime(args.start,'%Y%m%d'), 
-                          datetime.date.strftime(args.end,'%Y%m%d'))
-    args.output_dir = os.path.join(args.output_dir, subdir)
+    # create top-level dir
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
+
+    args.subdir = '%s_%s' % (datetime.date.strftime(args.start,'%Y%m%d'), 
+                              datetime.date.strftime(args.end,'%Y%m%d'))
 
     # check for mysql login credentials
     if not os.path.exists(os.path.expanduser("~/.my.cnf")):
@@ -250,9 +251,6 @@ def main():
     """Entry point for geo coding package
     """
 
-    # setting loging configuration
-    logging.basicConfig(level=logging.INFO,format='[%(levelname)s]\t[%(processName)s]\t[%(filename)s:%(lineno)d]\t[%(funcName)s]\t%(message)s')  
-    
     args = parse_args()
     if args.daily:
         orig_start = copy.deepcopy(args.start)
@@ -260,10 +258,31 @@ def main():
         for day in [orig_start + datetime.timedelta(days=n) for n in range((orig_end - orig_start).days)]:
             args.start = day
             args.end = day + datetime.timedelta(days=1)
+            # give each run its own dir
+            args.subdir = './%s_%s' % (datetime.date.strftime(args.start,'%Y%m%d'), 
+                                  datetime.date.strftime(args.end,'%Y%m%d'))
+
+            if not os.path.exists(os.path.join(args.output_dir,  args.subdir)):
+                os.makedirs(os.path.join(args.output_dir, args.subdir))
+            fh = logging.FileHandler(os.path.join(args.output_dir, args.subdir, 'log'))
+            fh.setLevel(logging.DEBUG)
+            fh.setFormatter(log_fmt)
+            logger.addHandler(fh)
+
             logging.info('running daily with args: %s', pprint.pformat(args.__dict__, indent=2))
+
             run_parallel(args)
     else:
+        if not os.path.exists(os.path.join(args.output_dir,  args.subdir)):
+            os.makedirs(os.path.join(args.output_dir, args.subdir))
+        logger.addHandler(logging.FileHandler(os.path.join(args.output_dir, args.subdir, 'log')))
+
         run_parallel(args)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+        print 2
+    except:
+        logging.error(traceback.format_exc())
+        raise

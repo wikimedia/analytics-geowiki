@@ -203,7 +203,7 @@ def load(wp_pr, countries_editors, countries_cities, args, sep = '\t'):
 				 datetime.date.strftime(end,dt_fmt)]), ext)
 
 	# Editor activity per country
-	fn = os.path.join(args.output_dir, get_filename(args.basename, wp_pr, 'countries', args.start, args.end, 'json'))
+	fn = os.path.join(args.output_dir, args.subdir, get_filename(args.basename, wp_pr, 'countries', args.start, args.end, 'json'))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	countries_editors_json = {}
 	countries_editors_json['project'] = wp_pr
@@ -214,7 +214,7 @@ def load(wp_pr, countries_editors, countries_cities, args, sep = '\t'):
 	countries_editors_json['end'] = datetime.date.strftime(args.end, '%Y%m%d')
 	json.dump(countries_editors_json,f,sort_keys=True,indent=4,ensure_ascii=False)
 
-	fn = os.path.join(args.output_dir, get_filename(args.basename, wp_pr, 'countries', args.start, args.end, 'csv'))
+	fn = os.path.join(args.output_dir, args.subdir, get_filename(args.basename, wp_pr, 'countries', args.start, args.end, 'csv'))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	# f = open(fn,'w')
 	for country in sorted(countries_editors.keys()):
@@ -226,7 +226,7 @@ def load(wp_pr, countries_editors, countries_cities, args, sep = '\t'):
 
 	# Top contributor cities per country
 
-	fn = os.path.join(args.output_dir, get_filename(args.basename, wp_pr, 'cities', args.start, args.end, 'json'))
+	fn = os.path.join(args.output_dir, args.subdir, get_filename(args.basename, wp_pr, 'cities', args.start, args.end, 'json'))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	countries_cities_json = {}
 	countries_cities_json['project'] = wp_pr
@@ -235,7 +235,7 @@ def load(wp_pr, countries_editors, countries_cities, args, sep = '\t'):
 	countries_cities_json['end'] = datetime.date.strftime(args.end, '%Y%m%d')
 	json.dump(countries_cities_json,f,sort_keys=True,indent=4,ensure_ascii=False)
 
-	fn = os.path.join(args.output_dir, get_filename(args.basename, wp_pr, 'cities', args.start, args.end, 'csv'))
+	fn = os.path.join(args.output_dir, args.subdir, get_filename(args.basename, wp_pr, 'cities', args.start, args.end, 'csv'))
 	f = codecs.open(fn, encoding='utf-8',mode='w')
 	# f = open(fn,'w')
 	for country in sorted(countries_cities.keys()):
