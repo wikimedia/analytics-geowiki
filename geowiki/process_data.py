@@ -222,7 +222,8 @@ def parse_args():
         action='store_true',
         default=False,
         help='including this flag instructs the program to run the query for each day between the '
-        'start and end date instead of only once for the entire range'
+        'start and end date (starting on each day and ending 30 days later) instead of only once '
+        'for the entire range'
         )
     parser.add_argument(
         '-n', '--threads',
@@ -258,7 +259,9 @@ def parse_args():
 
     wp_projects = wikipedia_projects.check_validity(args.wp_projects)   
     if not wp_projects:
-        logging.error("No valid wikipedia projects.")
+        sys.stderr.write('error: no valid wikipedia projects recieved\n'
+                         '       must either include the --wp flag or the --wpfiles flag\n')
+        parser.print_usage()
         sys.exit()
 
     if args.quiet:
