@@ -117,9 +117,7 @@ def process_project(args, wp_pr):
         ### use a server-side cursor to iterate the result set
         source = mysql_resultset(wp_pr,args.start, args.end)
         bots = retrieve_bot_list(wp_pr)
-        logger.debug('about to extract editor info type(source)=%s' % (type(source)))
         (editors,cities) = gc.extract(source=source,filter_ids=bots,geoIP_db=args.geoIP_db)
-        logger.debug('extracted editors using geo client')
 
         # TRANSFORM (only for editors)
         countries_editors,countries_cities = gc.transform(editors,cities)
@@ -253,14 +251,15 @@ def parse_args():
     if not args.start:
         args.start = args.end - dateutil.relativedelta.relativedelta(months=1)
 
-    cu_start = datetime.date.today() - dateutil.relativedelta.relativedelta(days=90)
-    if args.start < cu_start:
-        logging.error('start date (%s) exceeds durability of check_user table (90 days, i.e. %s)', args.start, cu_start)
+    cu_start = datetime.date.today() - datetime.timedelta(days=90)
+    if args.daily and args.start < cu_start + datetime.timedelta(days=30):
+        logging.error('starting date (%s) exceeds persistence of check_user table (90 days, i.e. %s)', args.start, cu_start)
         sys.exit()
 
     wp_projects = wikipedia_projects.check_validity(args.wp_projects)   
     if not wp_projects:
         logging.error("No valid wikipedia projects.")
+        sys.exit()
 
     if args.quiet:
         logger.setLevel(logging.INFO)
@@ -289,8 +288,8 @@ def main():
         orig_start = copy.deepcopy(args.start)
         orig_end = copy.deepcopy(args.end)
         for day in [orig_start + datetime.timedelta(days=n) for n in range((orig_end - orig_start).days)]:
-            args.start = day
-            args.end = day + datetime.timedelta(days=1)
+            args.start = day - datetime.timedelta(days=30)
+            args.end = day
             # give each run its own dir
             args.subdir = './%s_%s' % (datetime.date.strftime(args.start,'%Y%m%d'), 
                                   datetime.date.strftime(args.end,'%Y%m%d'))

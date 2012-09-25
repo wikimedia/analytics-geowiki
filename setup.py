@@ -17,16 +17,16 @@ setup(
     packages                = ['geowiki',],
     # package_dir           = {'geowiki': 'geowiki'},
 
-    package_data            = {'geowiki': ['data/*.bots']},
+    package_data            = {'geowiki': ['data/*.bots', 'data/*.csv']},
     include_package_data    = True,
     install_requires        = [
                                 "argparse >=1.2.1",
                                 "MySQL-python >= 1.2.3",
                                 "pygeoip >= 0.2.3",
-                                "dateutil >= 2.1"
                                 ],
     entry_points            = {
-                                'console_scripts': ['geowiki = geowiki.process_data:main']
+                                'console_scripts': ['geowiki = geowiki.process_data:main',
+                                                    'formatgeowiki = geowiki.format_output:main']
                                 },
     classifiers              = [],
 )

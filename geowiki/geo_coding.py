@@ -34,7 +34,7 @@ def extract(source,filter_ids,geoIP_db,sep=None):
 	:arg source: iterable
 	:arg filter_ids: set, containing user id that should be filtered, e.g. bots. Set can be empty in which case nothing will be filtered.
 	:arg geoIP_db: str, path to Geo IP database
-	:arg sep: str, separator for elements in source if they are strings. If None, elemtns won't be split
+	:arg sep: str, separator for elements in source if they are strings. If None, elements won't be split
 	:returns: (editors,cities)
 	'''
 	logger.debug('entering, geoIP_db: %s' % (geoIP_db))
