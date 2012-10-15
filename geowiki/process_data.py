@@ -221,9 +221,8 @@ def parse_args():
         '--daily',
         action='store_true',
         default=False,
-        help='including this flag instructs the program to run the query for each day between the '
-        'start and end date (starting on each day and ending 30 days later) instead of only once '
-        'for the entire range'
+        help='including this flag instructs the program to run monthly queries ending on each day between the '
+        'start and end date instead of only once for the entire range'
         )
     parser.add_argument(
         '-n', '--threads',
