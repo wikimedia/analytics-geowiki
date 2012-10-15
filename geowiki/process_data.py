@@ -17,13 +17,19 @@ import mysql_config
 import traceback
 
 
-logger = logging.getLogger('process_data')
-log_fmt = logging.Formatter('[%(levelname)s]\t[%(processName)s]\t[%(filename)s:%(lineno)d]\t[%(funcName)s]\t%(message)s')
-logger.setLevel(logging.DEBUG)
+
+root_logger = logging.getLogger()
+ch = logging.StreamHandler()
+formatter = logging.Formatter('[%(name)s]\t[%(levelname)s]\t[%(threadName)s]\t[%(filename)s:%(lineno)d]\t[%(funcName)s]\t%(message)s')
+ch.setFormatter(formatter)
+root_logger.addHandler(ch)
+root_logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 
 def run_parallel(args):
     '''
-    Start `n_threads` processes that work through the list of projects `wp_projects`
+    Start `args.threads` processes that work through the list of projects `wp_projects`
     '''
     p = Pool(args.threads)
 
@@ -164,7 +170,7 @@ def parse_args():
 
 
     def auto_date(datestr):
-        #logging.debug('entering autodate: %s', datestr)
+        #logger.debug('entering autodate: %s', datestr)
         return dateutil.parser.parse(datestr).date()
 
     parser = argparse.ArgumentParser(
@@ -256,12 +262,12 @@ def parse_args():
 
     wp_projects = wikipedia_projects.check_validity(args.wp_projects)   
     if not wp_projects:
-        parser.error('error: no valid wikipedia projects recieved\n'
+        parser.error('no valid wikipedia projects recieved\n'
                          '       must either include the --wp flag or the --wpfiles flag\n')
     
     if not hasattr(args, 'threads'):
         setattr(ars,'threads', len(args.wp_projects))
-        logging.info('Running with %d threads', len(args.wp_projects))
+        logger.info('Running with %d threads', len(args.wp_projects))
 
     if args.quiet:
         logger.setLevel(logging.INFO)
@@ -304,14 +310,13 @@ def main():
             fh.setFormatter(log_fmt)
             logger.addHandler(fh)
 
-            logging.info('running daily with args: %s', pprint.pformat(args.__dict__, indent=2))
+            logger.info('running daily with args: %s', pprint.pformat(args.__dict__, indent=2))
 
             run_parallel(args)
     else:
         if not os.path.exists(os.path.join(args.output_dir,  args.subdir)):
             os.makedirs(os.path.join(args.output_dir, args.subdir))
         logger.addHandler(logging.FileHandler(os.path.join(args.output_dir, args.subdir, 'log')))
-
         run_parallel(args)
 
 if __name__ == '__main__':
@@ -319,5 +324,5 @@ if __name__ == '__main__':
         main()
         print 2
     except:
-        logging.error(traceback.format_exc())
+        logger.error(traceback.format_exc())
         raise

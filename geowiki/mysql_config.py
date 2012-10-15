@@ -19,12 +19,16 @@ except:
 	pass
 
 logger = logging.getLogger(__name__)
+#logger = logging.getLogger()
+print 'msyql_config __name__: %s' % __name__
+
 
 # export all known bots for a wiki
 bot_query = "SELECT ug.ug_user FROM %s.user_groups ug WHERE ug.ug_group = 'bot'"
 def construct_bot_query(wp_pr):
 	'''Returns a set of all known bots for the `db_name` wp project database
 	'''
+	print 'mysql_config logger: %s' % logger
 	return bot_query%(get_db_name(wp_pr))
 
 # mysql query for the recent changes data
