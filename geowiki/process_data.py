@@ -228,7 +228,6 @@ def parse_args():
         '-n', '--threads',
         metavar='',
         type=int,
-        default=2,  
         dest='threads', 
         help="number of threads (default=2)"
     )
@@ -260,6 +259,10 @@ def parse_args():
         parser.error('error: no valid wikipedia projects recieved\n'
                          '       must either include the --wp flag or the --wpfiles flag\n')
     
+    if not hasattr(args, 'threads'):
+        setattr(ars,'threads', len(args.wp_projects))
+        logging.info('Running with %d threads', len(args.wp_projects))
+
     if args.quiet:
         logger.setLevel(logging.INFO)
 

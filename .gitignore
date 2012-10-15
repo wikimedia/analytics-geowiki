@@ -4,3 +4,9 @@
 *.json
 *.gz
 *.dat
+
+build
+dist
+*.egg-info
+
+output
