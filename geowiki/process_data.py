@@ -168,8 +168,8 @@ def parse_args():
         return dateutil.parser.parse(datestr).date()
 
     parser = argparse.ArgumentParser(
-        description="""Geo coding editor activity on Wikipedia
-        """
+        description="""Geo coding editor activity on Wikipedia""",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
         '-o', '--output',
@@ -254,16 +254,13 @@ def parse_args():
 
     cu_start = datetime.date.today() - datetime.timedelta(days=90)
     if args.daily and args.start < cu_start + datetime.timedelta(days=30):
-        logging.error('starting date (%s) exceeds persistence of check_user table (90 days, i.e. %s)', args.start, cu_start)
-        sys.exit()
+        parser.error('starting date (%s) exceeds persistence of check_user table (90 days, i.e. %s)' % (args.start, cu_start))
 
     wp_projects = wikipedia_projects.check_validity(args.wp_projects)   
     if not wp_projects:
-        sys.stderr.write('error: no valid wikipedia projects recieved\n'
+        parser.error('error: no valid wikipedia projects recieved\n'
                          '       must either include the --wp flag or the --wpfiles flag\n')
-        parser.print_usage()
-        sys.exit()
-
+    
     if args.quiet:
         logger.setLevel(logging.INFO)
 
