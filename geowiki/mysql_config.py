@@ -12,6 +12,9 @@ import os,logging
 
 from datetime import datetime,timedelta
 import calendar
+from collections import OrderedDict
+import codecs, json
+import time
 
 try:
 	import MySQLdb,MySQLdb.cursors
@@ -80,7 +83,6 @@ def construct_cu_query(wp_pr, start, end):
 # NOTE: The default mapping is 's3'
 cluster_mapping = {'enwiki':'s1','bgwiki':'s2','bgwiktionary':'s2','cswiki':'s2','enwikiquote':'s2','enwiktionary':'s2','eowiki':'s2','fiwiki':'s2','idwiki':'s2','itwiki':'s2','nlwiki':'s2','nowiki':'s2','plwiki':'s2','ptwiki':'s2','svwiki':'s2','thwiki':'s2','trwiki':'s2','zhwiki':'s2','commonswiki':'s4','dewiki':'s5','frwiki':'s6','jawiki':'s6','ruwiki':'s6','eswiki':'s7','huwiki':'s7','hewiki':'s7','ukwiki':'s7','frwiktionary':'s7','metawiki':'s7','arwiki':'s7','centralauth':'s7','cawiki':'s7','viwiki':'s7','fawiki':'s7','rowiki':'s7','kowiki':'s7'}
 
-#db_mapping = {'s2':'db1018', 's1':'db1033', 's7':'db1024', 's6':'db1040', 's5':'db1021', 's4':'db1004','s3':'db1035}'
 # new CNAME system.
 # TODO: abstract mapping to a use just number and then autogenerate CNAMES aliases
 db_mapping = {'s1':'s1-analytics-slave.eqiad.wmnet', 
@@ -103,23 +105,154 @@ def get_host_name(wp_pr):
 	cluster = cluster_mapping.get(wiki, 's3')
 	return db_mapping[cluster]
 
-def get_db_connection(wp_pr):
+def get_analytics_db_connection(wp_pr):
 	'''Returns a MySql connection to `wp_pr`, e.g. `en`'''
 
 	host_name = get_host_name(wp_pr)
 	db_name = get_db_name(wp_pr)
 
 	db = MySQLdb.connect(host=host_name,read_default_file=os.path.expanduser('~/.my.cnf'))
-	logging.info('Connected to [db:%s,host:%s]'%(db_name,host_name))
+	#logging.info('Connected to [db:%s,host:%s]'%(db_name,host_name))
 	return db
 
-def get_cursor(wp_pr,server_side=False):
+def get_analytics_cursor(wp_pr,server_side=False):
 	'''Returns a server-side cursor
 
 	:arg wp_pr: str, Wikipedia project (e.g. `en`)
 	:arg server_side: bool, if True returns a server-side cursor. Default is False
 	'''
-	db = get_db_connection(wp_pr)
+	db = get_analytics_db_connection(wp_pr)
 	cur = db.cursor(MySQLdb.cursors.SSCursor) if server_side else db.cursor(MySQLdb.cursors.Cursor)
 	
 	return cur
+
+
+### output mysql stuff
+
+DEST_TABLES = {}
+DEST_TABLES['active_editors_country_table'] = OrderedDict([
+		('project' , 'VARCHAR(255)'),
+		('country' , 'VARCHAR(255)'),
+		('cohort' , 'VARCHAR(255)'),
+		('start' , 'DATE'),
+		('end' , 'DATE'),
+		('count' , 'INT'),
+		('ts' , 'TIMESTAMP')])
+
+DEST_TABLES['active_editors_world_table'] = OrderedDict([
+       		('project' , 'VARCHAR(255)'),
+		('cohort' , 'VARCHAR(255)'),
+		('start' , 'DATE'),
+		('end' , 'DATE'),
+		('count' , 'INT'),
+		('ts' , 'TIMESTAMP')])
+
+DEST_TABLES['city_edit_fraction_table'] = OrderedDict([
+		('project' , 'VARCHAR(255)'),
+		('country' , 'VARCHAR(255)'),
+		('city' , 'VARCHAR(255)'),
+		('start' , 'DATE'),
+		('end' , 'DATE'),
+		('fraction' , 'FLOAT'),
+		('ts' , 'TIMESTAMP')])
+
+DEST_TABLES['country_total_edit_table'] = OrderedDict([
+		('project' , 'VARCHAR(255)'),
+		('country' , 'VARCHAR(255)'),
+		('start' , 'DATE'),
+		('end' , 'DATE'),
+		('edits' , 'INT'),
+		('ts' , 'TIMESTAMP')])
+
+
+def create_dest_tables(cursor, opts):
+
+	for table_id, field_types in DEST_TABLES.items():
+		table_name = opts[table_id]
+		field_str = ',\n'.join(map(' '.join, field_types.items()))
+		command = 'CREATE TABLE IF NOT EXISTS %s (%s)' % (table_name, field_str)
+		cursor.execute(command)
+	cursor.connection.commit()
+
+
+def get_dest_cursor(opts):
+	host_name = 's1-analytics-slave.eqiad.wmnet'
+	db_name = 'staging'
+	#logging.debug('connecting to destination mysql instance with credentials from: %s', opts['dest_sql_cnf'])
+	while(True):
+		try:
+			db = MySQLdb.connect(host=host_name, read_default_file=opts['dest_sql_cnf'], db=db_name)
+		except MySQLdb.OperationalError as e:
+			logging.error('caught OperationalError')
+			time.sleep(5)
+	#logging.info('Connected to [db:%s,host:%s]'%(db_name, host_name))
+	cur = db.cursor(MySQLdb.cursors.Cursor)
+	create_dest_tables(cur, opts)
+	return cur
+
+def write_country_active_editors_mysql(active_editors_by_country, opts):
+	table_id = 'active_editors_country_table'
+	table = opts[table_id]
+	fields = DEST_TABLES[table_id].keys()
+	fields.remove('ts')
+	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
+	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
+	cursor = get_dest_cursor(opts)
+	#logging.debug(query_fmt)
+	cursor.executemany(query_fmt, active_editors_by_country)
+	cursor.connection.commit()
+
+
+def write_world_active_editors_mysql(world_active_editors, opts):
+	table_id = 'active_editors_world_table'
+	table = opts[table_id]
+	fields = DEST_TABLES[table_id].keys()
+	fields.remove('ts')
+	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
+	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
+	cursor = get_dest_cursor(opts)
+	cursor.executemany(query_fmt, world_active_editors)
+	cursor.connection.commit()
+
+
+def write_city_edit_fraction_mysql(city_edit_fractions, opts):
+	table_id = 'city_edit_fraction_table'
+	table = opts[table_id]
+	fields = DEST_TABLES[table_id].keys()
+	fields.remove('ts')
+	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
+	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
+	cursor = get_dest_cursor(opts)
+	cursor.executemany(query_fmt, city_edit_fractions)
+	cursor.connection.commit()	
+
+
+def write_country_total_edits_mysql(country_totals, opts):
+	table_id = 'country_total_edit_table'
+	table = opts[table_id]
+	fields = DEST_TABLES[table_id].keys()
+	fields.remove('ts')
+	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
+	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
+	cursor = get_dest_cursor(opts)
+	cursor.executemany(query_fmt, country_totals)
+	cursor.connection.commit()
+
+
+def get_filepath(_type, project, opts):
+	dt_fmt = '%Y%m%d'
+	fn = '%s.%s' % (
+		'_'.join(
+			[opts['basename'],
+			 project,
+			 _type,
+			 opts['start'].strftime(dt_fmt),
+			 opts['end'].strftime(dt_fmt)]),
+		'json')
+	return os.path.join(opts['output_dir'], opts['subdir'], fn)
+
+
+def dump_json(project, _type, rows, opts):
+	fp = get_filepath(_type, project, opts)
+	f = codecs.open(fp, encoding='utf-8',mode='w')
+	json.dump(rows, f, ensure_ascii=False)
