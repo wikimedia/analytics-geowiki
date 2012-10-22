@@ -16,7 +16,7 @@ import geo_coding as gc
 import wikipedia_projects
 import mysql_config
 import traceback
-
+from profilehooks import profile
 
 
 root_logger = logging.getLogger()
@@ -57,12 +57,13 @@ def mysql_resultset(wp_pr, start, end):
 def retrieve_bot_list(wp_pr):
     '''Returns a set of all known bots for `wp_pr`. Bots are not labeled in a chohesive manner for Wikipedia. We use the union of the bots used for the [Wikipedia statistics](stats.wikimedia.org/), stored in `./data/erikZ.bots` and the `user_group.ug_group='bot'` flag in the MySql database. 
     '''
-    bot_fn = os.path.join(os.path.split(__file__)[0], 'data', 'erikZ.bots')    
+    bot_fn = os.path.join(os.path.split(__file__)[0], 'data', 'erikZ.bots')
     erikZ_bots = set(long(b) for b in open(bot_fn,'r'))
 
     query = mysql_config.construct_bot_query(wp_pr)
     cur = mysql_config.get_analytics_cursor(wp_pr,server_side=False)
     cur.execute(query)
+    cur.connection.close()
 
     pr_bots = set(c[0] for c in cur)
 
@@ -82,16 +83,21 @@ def process_project(wp_pr, opts):
         (editors,cities) = gc.extract(source=source,filter_ids=bots,geoIP_db=opts['geoIP_db'])
 
         # aggregate
+        logging.debug('tallying')
         country_active_editors, world_active_editors = gc.get_active_editors(wp_pr, editors, opts)
         city_fractions, country_total_edits = gc.get_city_edits(wp_pr, cities, opts)
 
         # write to db
-        mysql_config.write_country_active_editors_mysql(country_active_editors, opts)
-        mysql_config.write_world_active_editors_mysql(world_active_editors, opts)
-        mysql_config.write_city_edit_fraction_mysql(city_fractions, opts)
-        mysql_config.write_country_total_edits_mysql(country_total_edits, opts)
+        logging.debug('writing to db')
+        cursor = mysql_config.get_dest_cursor(opts)
+        mysql_config.write_country_active_editors_mysql(country_active_editors, opts, cursor=cursor)
+        mysql_config.write_world_active_editors_mysql(world_active_editors, opts, cursor=cursor)
+        mysql_config.write_city_edit_fraction_mysql(city_fractions, opts, cursor=cursor)
+        mysql_config.write_country_total_edits_mysql(country_total_edits, opts, cursor=cursor)
+        cursor.close()
 
         # write files
+        logging.debug('writing to files')
         mysql_config.dump_json(wp_pr, 'country_active_editors', country_active_editors, opts)
         mysql_config.dump_json(wp_pr, 'world_active_editors', world_active_editors, opts)
         mysql_config.dump_json(wp_pr, 'city_fractions', city_fractions, opts)
@@ -104,7 +110,7 @@ def process_project(wp_pr, opts):
         for some reason the tracebacks don't make their way back to the main process
         so it is best to print them out from within the process
         """
-        logger.error(traceback.format_exc())
+        logger.exception('caught exception within process:')
         raise
 
 
@@ -255,6 +261,11 @@ def parse_args():
         'http://dev.mysql.com/doc/refman/5.1/en/option-files.html'
         )
     parser.add_argument(
+        '--dest_db_name',
+        default='staging',
+        help='name of database in which to insert results'
+        )
+    parser.add_argument(
         '--active_editors_country_table',
         default = 'erosen_geocode_active_editors_country',
         help = 'table in `dest_sql` db in which the active editor cohorts by country will be stored'
@@ -293,7 +304,7 @@ def parse_args():
                          '       must either include the --wp flag or the --wpfiles flag\n')
     
     if not args.threads:
-        setattr(args,'threads', len(args.wp_projects))
+        setattr(args,'threads', min(len(args.wp_projects), 50))
         logger.info('Running with %d threads', len(args.wp_projects))
 
     if args.quiet:
@@ -349,7 +360,6 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-        print 2
     except:
         logger.error(traceback.format_exc())
         raise

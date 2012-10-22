@@ -176,65 +176,54 @@ def create_dest_tables(cursor, opts):
 
 
 def get_dest_cursor(opts):
-	host_name = 's1-analytics-slave.eqiad.wmnet'
-	db_name = 'staging'
 	#logging.debug('connecting to destination mysql instance with credentials from: %s', opts['dest_sql_cnf'])
-	while(True):
-		try:
-			db = MySQLdb.connect(host=host_name, read_default_file=opts['dest_sql_cnf'], db=db_name)
-		except MySQLdb.OperationalError as e:
-			logging.error('caught OperationalError')
-			time.sleep(5)
-	#logging.info('Connected to [db:%s,host:%s]'%(db_name, host_name))
+	db = MySQLdb.connect(read_default_file=opts['dest_sql_cnf'], db=opts['dest_db_name'])
 	cur = db.cursor(MySQLdb.cursors.Cursor)
 	create_dest_tables(cur, opts)
 	return cur
 
-def write_country_active_editors_mysql(active_editors_by_country, opts):
+
+def write_country_active_editors_mysql(active_editors_by_country, opts, cursor):
 	table_id = 'active_editors_country_table'
 	table = opts[table_id]
 	fields = DEST_TABLES[table_id].keys()
 	fields.remove('ts')
 	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
 	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
-	cursor = get_dest_cursor(opts)
 	#logging.debug(query_fmt)
 	cursor.executemany(query_fmt, active_editors_by_country)
 	cursor.connection.commit()
 
 
-def write_world_active_editors_mysql(world_active_editors, opts):
+def write_world_active_editors_mysql(world_active_editors, opts, cursor):
 	table_id = 'active_editors_world_table'
 	table = opts[table_id]
 	fields = DEST_TABLES[table_id].keys()
 	fields.remove('ts')
 	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
 	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
-	cursor = get_dest_cursor(opts)
 	cursor.executemany(query_fmt, world_active_editors)
 	cursor.connection.commit()
 
 
-def write_city_edit_fraction_mysql(city_edit_fractions, opts):
+def write_city_edit_fraction_mysql(city_edit_fractions, opts, cursor):
 	table_id = 'city_edit_fraction_table'
 	table = opts[table_id]
 	fields = DEST_TABLES[table_id].keys()
 	fields.remove('ts')
 	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
 	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
-	cursor = get_dest_cursor(opts)
 	cursor.executemany(query_fmt, city_edit_fractions)
 	cursor.connection.commit()	
 
 
-def write_country_total_edits_mysql(country_totals, opts):
+def write_country_total_edits_mysql(country_totals, opts, cursor):
 	table_id = 'country_total_edit_table'
 	table = opts[table_id]
 	fields = DEST_TABLES[table_id].keys()
 	fields.remove('ts')
 	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
 	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
-	cursor = get_dest_cursor(opts)
 	cursor.executemany(query_fmt, country_totals)
 	cursor.connection.commit()
 

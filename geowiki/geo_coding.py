@@ -52,9 +52,7 @@ def extract(source,filter_ids,geoIP_db,sep=None):
 	editors = {}
 	cities = {}
 
-
-	for line in source:				
-
+	for line in source:
 		# a line can be a tuple from a sql resultset or a '\n' escaped line in a text file
 		if sep:
 			res = line[:-1].split(sep)
