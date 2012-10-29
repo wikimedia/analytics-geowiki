@@ -91,9 +91,9 @@ def process_project(wp_pr, opts):
         logging.debug('writing to db')
         cursor = mysql_config.get_dest_cursor(opts)
         mysql_config.write_country_active_editors_mysql(country_active_editors, opts, cursor=cursor)
-        mysql_config.write_world_active_editors_mysql(world_active_editors, opts, cursor=cursor)
-        mysql_config.write_city_edit_fraction_mysql(city_fractions, opts, cursor=cursor)
-        mysql_config.write_country_total_edits_mysql(country_total_edits, opts, cursor=cursor)
+        # mysql_config.write_world_active_editors_mysql(world_active_editors, opts, cursor=cursor)
+        # mysql_config.write_city_edit_fraction_mysql(city_fractions, opts, cursor=cursor)
+        # mysql_config.write_country_total_edits_mysql(country_total_edits, opts, cursor=cursor)
         cursor.close()
 
         # write files
@@ -267,23 +267,23 @@ def parse_args():
         )
     parser.add_argument(
         '--active_editors_country_table',
-        default = 'erosen_geocode_active_editors_country',
+        default = DEST_TABLE_NAMES['active_editor_country'],
         help = 'table in `dest_sql` db in which the active editor cohorts by country will be stored'
         )
     parser.add_argument(
         '--active_editors_world_table',
-        default='erosen_geocode_active_editors_world',
+        default = DEST_TABLE_NAMES['active_editor_world'],
         help='table in `dest_sql` db in which the active editor cohorts for the entire world will be stored'
         )
     parser.add_argument(
         '--city_edit_fraction_table',
-        default='erosen_geocode_city_edit_fraction',
+        default = DEST_TABLE_NAMES['city_edit_fraction'],
         help='table in `dest_sql` db in which the fraction of total country edits originating from'
         'the given city will be stored'
         )
     parser.add_argument(
         '--country_total_edit_table',
-        default='erosen_geocode_country_edits',
+        default = DEST_TABLE_NAMES['country_total_edit'],
         help='table in `dest_sql` db in which the total number of edits from a given country will be stored'
         )
 
@@ -304,7 +304,7 @@ def parse_args():
                          '       must either include the --wp flag or the --wpfiles flag\n')
     
     if not args.threads:
-        setattr(args,'threads', min(len(args.wp_projects), 50))
+        setattr(args,'threads', min(len(args.wp_projects), 10))
         logger.info('Running with %d threads', len(args.wp_projects))
 
     if args.quiet:

@@ -129,8 +129,15 @@ def get_analytics_cursor(wp_pr,server_side=False):
 
 ### output mysql stuff
 
+DEST_TABLE_NAMES = {
+        'active_editors_country' : 'erosen_geocode_active_editors_country',
+        'active_editors_world' : 'erosen_geocode_active_editors_world',
+        'city_edit_fraction' : 'erosen_geocode_city_edit_fraction',
+        'country_total_edit' : 'erosen_geocode_country_edits'
+	}
+
 DEST_TABLES = {}
-DEST_TABLES['active_editors_country_table'] = OrderedDict([
+DEST_TABLES['active_editors_country'] = OrderedDict([
 		('project' , 'VARCHAR(255)'),
 		('country' , 'VARCHAR(255)'),
 		('cohort' , 'VARCHAR(255)'),
@@ -139,7 +146,7 @@ DEST_TABLES['active_editors_country_table'] = OrderedDict([
 		('count' , 'INT'),
 		('ts' , 'TIMESTAMP')])
 
-DEST_TABLES['active_editors_world_table'] = OrderedDict([
+DEST_TABLES['active_editors_world'] = OrderedDict([
        		('project' , 'VARCHAR(255)'),
 		('cohort' , 'VARCHAR(255)'),
 		('start' , 'DATE'),
@@ -147,7 +154,7 @@ DEST_TABLES['active_editors_world_table'] = OrderedDict([
 		('count' , 'INT'),
 		('ts' , 'TIMESTAMP')])
 
-DEST_TABLES['city_edit_fraction_table'] = OrderedDict([
+DEST_TABLES['city_edit_fraction'] = OrderedDict([
 		('project' , 'VARCHAR(255)'),
 		('country' , 'VARCHAR(255)'),
 		('city' , 'VARCHAR(255)'),
@@ -156,7 +163,7 @@ DEST_TABLES['city_edit_fraction_table'] = OrderedDict([
 		('fraction' , 'FLOAT'),
 		('ts' , 'TIMESTAMP')])
 
-DEST_TABLES['country_total_edit_table'] = OrderedDict([
+DEST_TABLES['country_total_edit'] = OrderedDict([
 		('project' , 'VARCHAR(255)'),
 		('country' , 'VARCHAR(255)'),
 		('start' , 'DATE'),
@@ -184,46 +191,46 @@ def get_dest_cursor(opts):
 
 
 def write_country_active_editors_mysql(active_editors_by_country, opts, cursor):
-	table_id = 'active_editors_country_table'
+	table_id = 'active_editors_country'
 	table = opts[table_id]
 	fields = DEST_TABLES[table_id].keys()
 	fields.remove('ts')
 	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
-	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
+	query_fmt = """REPLACE INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
 	#logging.debug(query_fmt)
 	cursor.executemany(query_fmt, active_editors_by_country)
 	cursor.connection.commit()
 
 
 def write_world_active_editors_mysql(world_active_editors, opts, cursor):
-	table_id = 'active_editors_world_table'
+	table_id = 'active_editors_world'
 	table = opts[table_id]
 	fields = DEST_TABLES[table_id].keys()
 	fields.remove('ts')
 	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
-	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
+	query_fmt = """REPLACE INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
 	cursor.executemany(query_fmt, world_active_editors)
 	cursor.connection.commit()
 
 
 def write_city_edit_fraction_mysql(city_edit_fractions, opts, cursor):
-	table_id = 'city_edit_fraction_table'
+	table_id = 'city_edit_fraction'
 	table = opts[table_id]
 	fields = DEST_TABLES[table_id].keys()
 	fields.remove('ts')
 	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
-	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
+	query_fmt = """REPLACE INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
 	cursor.executemany(query_fmt, city_edit_fractions)
 	cursor.connection.commit()	
 
 
 def write_country_total_edits_mysql(country_totals, opts, cursor):
-	table_id = 'country_total_edit_table'
+	table_id = 'country_total_edit'
 	table = opts[table_id]
 	fields = DEST_TABLES[table_id].keys()
 	fields.remove('ts')
 	dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
-	query_fmt = """INSERT INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
+	query_fmt = """REPLACE INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
 	cursor.executemany(query_fmt, country_totals)
 	cursor.connection.commit()
 
