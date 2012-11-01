@@ -139,8 +139,8 @@ def get_active_editors(wp_pr, editors, opts):
 			count = einfo['edits']
 			if count > 0:
 				country_nest[country]["all"] +=1
-				world_nest["5+"] += 1
-				if count > 5:
+				world_nest["all"] += 1
+				if count >= 5:
 					country_nest[country]["5+"] +=1					
 					world_nest["5+"] += 1
 					if count >= 100:
