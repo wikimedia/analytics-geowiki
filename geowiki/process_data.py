@@ -92,9 +92,9 @@ def process_project(wp_pr, opts):
         logging.debug('writing to db')
         cursor = mysql_config.get_dest_cursor(opts)
         mysql_config.write_country_active_editors_mysql(country_active_editors, opts, cursor=cursor)
-        # mysql_config.write_world_active_editors_mysql(world_active_editors, opts, cursor=cursor)
-        # mysql_config.write_city_edit_fraction_mysql(city_fractions, opts, cursor=cursor)
-        # mysql_config.write_country_total_edits_mysql(country_total_edits, opts, cursor=cursor)
+        mysql_config.write_world_active_editors_mysql(country_active_editors, opts, cursor=cursor)
+        mysql_config.write_city_edit_fraction_mysql(city_fractions, opts, cursor=cursor)
+        mysql_config.write_country_total_edits_mysql(country_total_edits, opts, cursor=cursor)
         cursor.close()
 
         # write files
@@ -211,7 +211,8 @@ def parse_args():
         type=auto_date,
         default=None,
         dest='start',
-        help="inclusive query start date. parses string with dateutil.parser.parse()"
+        help="inclusive query start date. parses string with dateutil.parser.parse().  Note that if only "
+        "a date is given, the hours, minutes and seconds will be filled in with 0's"
     )
     parser.add_argument(
         '-e', '--end',
@@ -219,7 +220,7 @@ def parse_args():
         type=auto_date,
         default=datetime.date.today() - datetime.timedelta(days=1),
         dest='end',
-        help="inclusive query start date. parses string with dateutil.parser.parse()"
+        help="exclusive query end date. parses string with dateutil.parser.parse()"
     )
     parser.add_argument(
         '--daily',
@@ -267,28 +268,26 @@ def parse_args():
         help='name of database in which to insert results'
         )
     parser.add_argument(
-        '--active_editors_country_table',
-        default = DEST_TABLE_NAMES['active_editor_country'],
+        '--active_editors_country',
+        default = mysql_config.DEST_TABLE_NAMES['active_editors_country'],
         help = 'table in `dest_sql` db in which the active editor cohorts by country will be stored'
         )
     parser.add_argument(
-        '--active_editors_world_table',
-        default = DEST_TABLE_NAMES['active_editor_world'],
+        '--active_editors_world',
+        default = mysql_config.DEST_TABLE_NAMES['active_editors_world'],
         help='table in `dest_sql` db in which the active editor cohorts for the entire world will be stored'
         )
     parser.add_argument(
-        '--city_edit_fraction_table',
-        default = DEST_TABLE_NAMES['city_edit_fraction'],
+        '--city_edit_fraction',
+        default = mysql_config.DEST_TABLE_NAMES['city_edit_fraction'],
         help='table in `dest_sql` db in which the fraction of total country edits originating from'
         'the given city will be stored'
         )
     parser.add_argument(
-        '--country_total_edit_table',
-        default = DEST_TABLE_NAMES['country_total_edit'],
+        '--country_total_edit',
+        default = mysql_config.DEST_TABLE_NAMES['country_total_edit'],
         help='table in `dest_sql` db in which the total number of edits from a given country will be stored'
         )
-
-
 
     # post processing
     args = parser.parse_args()
@@ -305,7 +304,7 @@ def parse_args():
                          '       must either include the --wp flag or the --wpfiles flag\n')
     
     if not args.threads:
-        setattr(args,'threads', min(len(args.wp_projects), 10))
+        setattr(args,'threads', min(len(args.wp_projects), 30))
         logger.info('Running with %d threads', len(args.wp_projects))
 
     if args.quiet:

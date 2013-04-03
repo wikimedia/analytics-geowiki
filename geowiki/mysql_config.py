@@ -42,6 +42,7 @@ def construct_rc_query(wp_pr):
 	return recentchanges_query%get_db_name(wp_pr)
 
 # mysql query for the check user data
+#checkuser_query = "SELECT cuc.cuc_user, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>=%s AND cuc.cuc_timestamp<%s"
 checkuser_query = "SELECT cuc.cuc_user, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>%s AND cuc.cuc_timestamp<%s"
 def construct_cu_query(wp_pr, start, end):
 	'''Constructs a query for the checkuser table for a given month. The timestamp `ts` can be either:
@@ -186,7 +187,7 @@ def get_dest_cursor(opts):
 	#logging.debug('connecting to destination mysql instance with credentials from: %s', opts['dest_sql_cnf'])
 	db = MySQLdb.connect(read_default_file=opts['dest_sql_cnf'], db=opts['dest_db_name'])
 	cur = db.cursor(MySQLdb.cursors.Cursor)
-	create_dest_tables(cur, opts)
+	#create_dest_tables(cur, opts)
 	return cur
 
 
