@@ -41,8 +41,8 @@ def extract(source,filter_ids,geoIP_db,sep=None):
     :returns: (editors,cities)
     '''
     logger.debug('entering, geoIP_db: %s' % (geoIP_db))
-    #gi = pygeoip.GeoIP(geoIP_db, pygeoip.MEMORY_CACHE)
-    gi = pygeoip.GeoIP(geoIP_db)
+    gi = pygeoip.GeoIP(geoIP_db, pygeoip.const.MEMORY_CACHE)
+    #gi = pygeoip.GeoIP(geoIP_db)
     logger.debug('loaded cache')
 
     # test
