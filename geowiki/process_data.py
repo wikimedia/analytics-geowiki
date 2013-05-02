@@ -1,3 +1,4 @@
+#!/usr/bin/python
 
 """
 # Geodata
@@ -99,10 +100,10 @@ def process_project(wp_pr, opts):
 
         # write files
         logging.debug('writing to files')
-        mysql_config.dump_json(wp_pr, 'country_active_editors', country_active_editors, opts)
-        mysql_config.dump_json(wp_pr, 'world_active_editors', world_active_editors, opts)
-        mysql_config.dump_json(wp_pr, 'city_fractions', city_fractions, opts)
-        mysql_config.dump_json(wp_pr, 'country_total_edits', country_total_edits, opts)
+        #mysql_config.dump_json(wp_pr, 'country_active_editors', country_active_editors, opts)
+        #mysql_config.dump_json(wp_pr, 'world_active_editors', world_active_editors, opts)
+        #mysql_config.dump_json(wp_pr, 'city_fractions', city_fractions, opts)
+        #mysql_config.dump_json(wp_pr, 'country_total_edits', country_total_edits, opts)
 
         logger.info('Done : %s'%wp_pr)
     except:
@@ -244,7 +245,8 @@ def parse_args():
     parser.add_argument(
         '-g', '--geoDB',
         metavar='',
-        default='/usr/share/GeoIP/GeoIPCity.dat',
+        #default='/usr/share/GeoIP/GeoIPCity.dat',
+        default='/home/erosen/share/GeoIP/GeoIPCity.dat', # this one I manually manage
         dest = 'geoIP_db',
         help='<path> to geo IP database'
     )
