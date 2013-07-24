@@ -24,10 +24,14 @@ setup(
                                 "MySQL-python >= 1.2.3",
                                 "pygeoip >= 0.2.3",
                                 "moka >= 0.0.3",
+                                "gcat == 0.1.0",
                                 ],
     entry_points            = {
-                                'console_scripts': ['geowiki = geowiki.process_data:main',
-                                                    'formatgeowiki = geowiki.format_output:main']
+                                'console_scripts': ['geowiki = geowiki.process_data:main']
                                 },
+    dependency_links        = [
+                                "http://github.com/wikimedia/limnpy/tarball/master#egg=limnpy-0.1.0",
+                                "http://github.com/embr/wikipandas/tarball/master#egg=wikipandas-0.0.1"
+                                ],
     classifiers              = [],
 )
