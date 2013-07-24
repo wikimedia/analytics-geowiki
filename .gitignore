@@ -1,6 +1,5 @@
 .DS_Store*
 *.pyc
-*.tsv
 *.json
 *.gz
 *.dat
