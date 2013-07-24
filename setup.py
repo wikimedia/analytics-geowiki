@@ -23,7 +23,6 @@ setup(
                                 "argparse >=1.2.1",
                                 "MySQL-python >= 1.2.3",
                                 "pygeoip >= 0.2.3",
-                                "moka >= 0.0.3",
                                 "gcat == 0.1.0",
                                 ],
     entry_points            = {

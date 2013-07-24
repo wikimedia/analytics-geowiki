@@ -106,23 +106,23 @@ def get_host_name(wp_pr):
     cluster = cluster_mapping.get(wiki, 's3')
     return db_mapping[cluster]
 
-def get_analytics_db_connection(wp_pr):
+def get_analytics_db_connection(wp_pr, opts):
     '''Returns a MySql connection to `wp_pr`, e.g. `en`'''
 
     host_name = get_host_name(wp_pr)
-    db_name = get_db_name(wp_pr)
+    #db_name = get_db_name(wp_pr)
 
-    db = MySQLdb.connect(host=host_name,read_default_file=os.path.expanduser('~/.my.cnf'))
+    db = MySQLdb.connect(host=host_name,read_default_file=opts['source_sql_cnf'])
     #logging.info('Connected to [db:%s,host:%s]'%(db_name,host_name))
     return db
 
-def get_analytics_cursor(wp_pr,server_side=False):
+def get_analytics_cursor(wp_pr, opts, server_side=False):
     '''Returns a server-side cursor
 
     :arg wp_pr: str, Wikipedia project (e.g. `en`)
     :arg server_side: bool, if True returns a server-side cursor. Default is False
     '''
-    db = get_analytics_db_connection(wp_pr)
+    db = get_analytics_db_connection(wp_pr, opts)
     cur = db.cursor(MySQLdb.cursors.SSCursor) if server_side else db.cursor(MySQLdb.cursors.Cursor)
     
     return cur

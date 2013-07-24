@@ -41,27 +41,27 @@ def run_parallel(opts):
     logger.info('All projects done. Results are in %s'%(opts['output_dir']))
 
 
-def mysql_resultset(wp_pr, start, end):
+def mysql_resultset(wp_pr, start, end, opts):
     '''Returns an iterable MySql resultset using a server side cursor that can be used to iterate the data. Alternavively, the `dump_data_iterator()` method dumps the data onto disk before  aggregation. 
     '''
     # query = mysql_config.construct_rc_query(db_name)  
     query = mysql_config.construct_cu_query(wp_pr=wp_pr,start=start, end=end)
     logger.debug("SQL query for %s for start=%s, end=%s:\n\t%s"%(wp_pr, start, end, query))
 
-    cur = mysql_config.get_analytics_cursor(wp_pr,server_side=True)
+    cur = mysql_config.get_analytics_cursor(wp_pr, opts, server_side=True)
     cur.execute(query)
 
     return cur
 
 
-def retrieve_bot_list(wp_pr):
+def retrieve_bot_list(wp_pr, opts):
     '''Returns a set of all known bots for `wp_pr`. Bots are not labeled in a chohesive manner for Wikipedia. We use the union of the bots used for the [Wikipedia statistics](stats.wikimedia.org/), stored in `./data/erikZ.bots` and the `user_group.ug_group='bot'` flag in the MySql database. 
     '''
     bot_fn = os.path.join(os.path.split(__file__)[0], 'data', 'erikZ.bots')
     erikZ_bots = set(long(b) for b in open(bot_fn,'r'))
 
     query = mysql_config.construct_bot_query(wp_pr)
-    cur = mysql_config.get_analytics_cursor(wp_pr,server_side=False)
+    cur = mysql_config.get_analytics_cursor(wp_pr, opts, server_side=False)
     cur.execute(query)
     cur.connection.close()
 
@@ -78,8 +78,8 @@ def process_project(wp_pr, opts):
         logger.info('CREATING DATASET FOR %s'%wp_pr)
 
         ### use a server-side cursor to iterate the result set
-        source = mysql_resultset(wp_pr,opts['start'], opts['end'])
-        bots = retrieve_bot_list(wp_pr)
+        source = mysql_resultset(wp_pr,opts['start'], opts['end'], opts)
+        bots = retrieve_bot_list(wp_pr, opts)
         (editors,cities) = gc.extract(source=source,filter_ids=bots,geoIP_db=opts['geoIP_db'])
 
         # aggregate
@@ -253,6 +253,14 @@ def parse_args():
         type=int,
         default=10,
         help = 'number of cities to report when aggregating by city'
+        )
+    parser.add_argument(
+        '--source_sql_cnf',
+        type=os.path.expanduser,
+        default='~/.my.cnf',
+        help='mysql ini-style option file which allows a user to write to the read from database'
+        'production mediawiki databases to collect ip info. For more information, see '
+        'http://dev.mysql.com/doc/refman/5.1/en/option-files.html'
         )
     parser.add_argument(
         '--dest_sql_cnf',
