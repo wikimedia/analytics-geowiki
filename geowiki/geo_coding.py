@@ -16,7 +16,7 @@ import mysql_config
 import pprint
 from collections import defaultdict
 
-import pygeoip
+import GeoIP
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,7 @@ def extract(source,filter_ids,geoIP_db,sep=None):
     :returns: (editors,cities)
     '''
     logger.debug('entering, geoIP_db: %s' % (geoIP_db))
-    gi = pygeoip.GeoIP(geoIP_db, pygeoip.const.MEMORY_CACHE)
-    #gi = pygeoip.GeoIP(geoIP_db)
+    gi = GeoIP.open(geoIP_db, GeoIP.GEOIP_MEMORY_CACHE)
     logger.debug('loaded cache')
 
     # test

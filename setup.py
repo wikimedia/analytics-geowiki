@@ -22,7 +22,7 @@ setup(
     install_requires        = [
                                 "argparse >=1.2.1",
                                 "MySQL-python >= 1.2.3",
-                                "pygeoip >= 0.2.3",
+                                "geoip",
                                 "gcat == 0.1.0",
                                 ],
     entry_points            = {
