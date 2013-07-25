@@ -243,8 +243,8 @@ def parse_args():
     parser.add_argument(
         '-g', '--geoDB',
         metavar='',
-        #default='/usr/share/GeoIP/GeoIPCity.dat',
-        default='/home/erosen/share/GeoIP/GeoIPCity.dat', # this one I manually manage
+        default='/usr/share/GeoIP/GeoIPCity.dat',
+        #default='/home/erosen/share/GeoIP/GeoIPCity.dat', # this one I manually manage
         dest = 'geoIP_db',
         help='<path> to geo IP database'
     )
