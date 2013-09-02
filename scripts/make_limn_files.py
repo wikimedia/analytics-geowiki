@@ -289,6 +289,22 @@ def parse_args():
         default=True,
         help='use a multiprocessing pool to execute per-language analysis in parallel'
         )
+    parser.add_argument(
+        '--source_sql_cnf',
+        type=os.path.expanduser,
+        default='~/.my.cnf.research',
+        help='mysql ini-style option to connect to a database containing the '
+	'data to limnify. This configuration is usually the one you used as '
+	'--dest_sql_cnf for process_data.py. '
+	'(default: ~/.my.cnf.research)'
+        )
+    parser.add_argument(
+        '--source_db_name',
+        default='staging',
+        help='name of database to get data from. This database is accessed '
+	'through the credentials provided by --source-sql_cnf. '
+	'(default: staging)'
+        )
 
     args = parser.parse_args()
     logger.info(pprint.pformat(vars(args), indent=2))
@@ -305,7 +321,7 @@ def get_projects():
 def process_project_par((project, basedir)):
     try:
         logger.info('processing project: %s', project)
-        db = sql.connect(read_default_file=os.path.expanduser('~/.my.cnf.research'), db='staging')
+        db = sql.connect(read_default_file=args.source_sql_cnf, db=args.source_db_name)
         cursor = db.cursor(MySQLdb.cursors.DictCursor)
 
         # db = sql.connect('/home/erosen/src/editor-geocoding/geowiki.sqlite')
@@ -326,7 +342,7 @@ def process_project(project, cursor, basedir):
 if __name__ == '__main__':
     args = parse_args()
 
-    db = MySQLdb.connect(read_default_file=os.path.expanduser('~/.my.cnf.research'), db='staging', cursorclass=MySQLdb.cursors.DictCursor)
+    db = MySQLdb.connect(read_default_file=args.source_sql_cnf, db=args.source_db_name, cursorclass=MySQLdb.cursors.DictCursor)
     # db = sql.connect('/home/erosen/src/editor-geocoding/geowiki.sqlite')
     # db.row_factory = sql.Row
     cursor = db.cursor()
