@@ -9,3 +9,8 @@ dist
 *.egg-info
 
 output
+
+.globaldev.my.cnf
+.research.my.cnf
+
+geowiki-backup-data
