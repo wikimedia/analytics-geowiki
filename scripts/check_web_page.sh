@@ -30,6 +30,7 @@ SCRIPT_DIR_ABS="$(dirname "$0")"
 # Urls to download files from
 URL_BASE="http://gp.wmflabs.org/"
 URL_BASE_DASHBOARD="$URL_BASE/dashboards"
+URL_BASE_GRAPH="$URL_BASE/graphs"
 
 # Set DEBUG to "local" to download files into /tmp and use those copies
 # instead of fetching the files again and again for each run. Files do
@@ -148,6 +149,47 @@ download_file() {
 }
 
 #---------------------------------------------------
+# Downloads a json file and does some basic checks on the file
+#
+# It is assured (not by parsing the json, but by some basic grepping)
+#   * the file contains a matching "id" node, and
+#   * the file contains a name node that is a string.
+#
+# Input:
+#   $1 - The kind of file. I.e.: either "graph", or "datasource".
+#   $2 - The file's stub. E.g.: "active_editors_by_region",
+#        "pt_top10".
+#   $3 - The url to download (without the ".json" ending)
+#
+# Output:
+#   DOWNLOADED_FILE_ABS - The absolute name of the file into which the
+#       URL's content can be found. Do not modify this file, as it may
+#       be reused for different runs, when in DEBUG=local mode. Do not
+#       clean up the file. It is removed automatically (when not in
+#       DEBUG=local).
+#
+check_json() {
+    local KIND="$1"
+    local JSON_STUB="$2"
+    local URL_WITHOUT_EXTENSION="$3"
+    download_file "${URL_WITHOUT_EXTENSION}.json"
+
+    # We do not parse the json, just to some basic sanity checks.
+
+    # Check for matching id
+    if ! grep -q '"id"[[:space:]]*:[[:space:]]*"'"$JSON_STUB"'"' "${DOWNLOADED_FILE_ABS}"
+    then
+	error "Could not find id '$JSON_STUB' for $KIND '$JSON_STUB'"
+    fi
+
+    # Check for name being a string
+    if ! grep -q '"name"[[:space:]]*:[[:space:]]*"' "${DOWNLOADED_FILE_ABS}"
+    then
+	error "Could not find 'name' node of type string for $KIND '$JSON_STUB'"
+    fi
+}
+
+#---------------------------------------------------
 # Downloads a dashboard file and does some basic checks on the file
 #
 # It is assured that
@@ -176,6 +218,33 @@ check_dashboard() {
 }
 
 #---------------------------------------------------
+# Downloads a graph file and does some basic checks on the file
+#
+# It is assured (not by parsing the json, but by some basic grepping)
+#   * the file contains a matching "id" node, and
+#   * the file contains a name node that is a string.
+#
+# Input:
+#   $2 - The file's stub. E.g.: "active_editors_by_region",
+#        "pt_top10".
+#
+# Output:
+#   -
+#
+check_graph() {
+    local GRAPH_STUB="$1"
+
+    local DOWNLOADED_FILE_ABS=
+    check_json "graph" "${GRAPH_STUB}" "${URL_BASE_GRAPH}/${GRAPH_STUB}"
+
+    # Check for matching slug
+    if ! grep -q '"slug"[[:space:]]*:[[:space:]]*"'"$GRAPH_STUB"'"' "${DOWNLOADED_FILE_ABS}"
+    then
+	error "Could not find slug '$GRAPH_STUB' for graph '$GRAPH_STUB'"
+    fi
+}
+
+#---------------------------------------------------
 # Checks that geowiki's dashboards are ok.
 #
 # Input:
@@ -189,6 +258,27 @@ check_dashboards() {
 }
 
 #---------------------------------------------------
+# Checks that geowiki's graphs are ok.
+#
+# Input:
+#   -
+#
+# Output:
+#   -
+#
+check_graphs() {
+    check_graph active_editors_by_region
+    check_graph global_north_south_active_editors
+    check_graph global_south_editor_fractions
+    check_graph grants_count_by_global_south
+    check_graph grants_count_by_program
+    check_graph grants_spending_by_country
+    check_graph grants_spending_by_global_south
+    check_graph grants_spending_by_program
+    check_graph pt_wp_brazil
+}
+
+#---------------------------------------------------
 # Checks that geowiki's files are ok.
 #
 # Input:
@@ -199,7 +289,7 @@ check_dashboards() {
 #
 check() {
     check_dashboards
-    error "checking graphs not yet implemented"
+    check_graphs
     error "checking datasources not yet implemented"
     error "checking datafiles not yet implemented"
 }
