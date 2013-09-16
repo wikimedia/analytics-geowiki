@@ -87,7 +87,7 @@ def write_project_mysql(proj, cursor, basedir, country_graphs=False):
         query = """ SELECT * FROM erosen_geocode_active_editors_country WHERE project=%s AND end = start + INTERVAL 30 day"""
     cursor.execute(query, [proj])
     proj_rows = cursor.fetchall()
-    
+
     logger.debug('len(proj_rows): %d', len(proj_rows))
     if not proj_rows and sql.paramstyle == 'format':
         logger.debug('GOT NUTHIN!: %s', query % proj)
@@ -159,7 +159,7 @@ def write_overall_mysql(projects, cursor, basedir):
     query = """ SELECT * FROM erosen_geocode_active_editors_world"""
     cursor.execute(query)
     overall_rows = cursor.fetchall()
-    
+
     limn_rows = make_limn_rows(overall_rows, 'project')
     monthly_limn_rows = filter(lambda r: r['date'].day==1, limn_rows)
     #logger.debug('overall limn_rows: %s', pprint.pformat(limn_rows))
@@ -211,14 +211,14 @@ def write_group_mysql(group_key, country_data, cursor, basedir):
     for group_val, countries in groups.items():
         logger.debug('processing group_val: %s', group_val)
         if sql.paramstyle == 'qmark':
-            group_query = """SELECT end, cohort, SUM(count) 
+            group_query = """SELECT end, cohort, SUM(count)
                          FROM erosen_geocode_active_editors_country
                          WHERE country IN (%s)
                          AND end = start + INTERVAL 30 day
                          GROUP BY end, cohort"""
             countries_fmt = ', '.join([' ? ']*len(countries))
         elif sql.paramstyle == 'format':
-            group_query = """SELECT end, cohort, SUM(count) 
+            group_query = """SELECT end, cohort, SUM(count)
                          FROM erosen_geocode_active_editors_country
                          WHERE country IN (%s)
                          AND end = start + INTERVAL 30 day
@@ -266,8 +266,8 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description='Format a collection of json files output by editor-geocoding and creates a single csv in digraph format.')
     parser.add_argument(
-        '--geo_files', 
-        metavar='GEOCODING_FILE.json', 
+        '--geo_files',
+        metavar='GEOCODING_FILE.json',
         nargs='+',
         help='any number of appropriately named json files')
     parser.add_argument(
@@ -279,9 +279,9 @@ def parse_args():
         default='geo_editors',
         help='base file name for csv and yaml files.  for example: BASEDIR/datasources/BAS_FILENAME_en.yaml')
     parser.add_argument(
-        '-k', 
-        type=int, 
-        default=10, 
+        '-k',
+        type=int,
+        default=10,
         help='the number of countries to include in the selected project datasource')
     parser.add_argument(
         '-p', '--parallel',
@@ -331,7 +331,7 @@ def process_project_par((project, basedir)):
         #write_project_country_language(project, cursor, args.basedir)
     except:
         logger.exception('caught exception in process:')
-        raise    
+        raise
 
 def process_project(project, cursor, basedir):
     logger.info('processing project: %s (%d/%d)', project, i, len(projects))
