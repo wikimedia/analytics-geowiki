@@ -341,7 +341,7 @@ def process_project(project, cursor, basedir):
     #write_project_country_language(project, cursor, args.basedir)
 
 def plot_gs_editor_fraction(basedir):
-    df = pd.read_csv('data/datafiles/global_south.csv', index_col='date', parse_dates=['date'])
+    df = pd.read_csv(basedir + '/datafiles/global_south.csv', index_col='date', parse_dates=['date'])
     df['Global South Fraction (100+)'] = df['Global South (100+)'] / (df['Global South (100+)'] + df['Global North (100+)'] + df['Unkown (100+)']).apply(float)
     df['Global South Fraction (5+)']   = df['Global South (5+)'] / (df['Global South (5+)'] + df['Global North (5+)'] + df['Unkown (5+)']).apply(float)
     df['Global South Fraction (all)'] = df['Global South (all)'] / (df['Global South (all)'] + df['Global North (all)'] + df['Unkown (all)']).apply(float)
