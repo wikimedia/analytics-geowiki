@@ -349,7 +349,7 @@ def plot_gs_editor_fraction(basedir):
 
     ds_frac = limnpy.DataSource(limn_id='global_south_editor_fractions',
             limn_name='Global South Editor Fractions',
-            limn_group='gp',
+            limn_group=LIMN_GROUP,
             data = df_frac)
     ds_frac.write(basedir)
     g = ds_frac.get_graph(metric_ids=['Global South Fraction (5+)'],
