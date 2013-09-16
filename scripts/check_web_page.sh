@@ -50,9 +50,6 @@ WIKIS_HARDLY_ACTIVE_EDITORS=( ab ace af ak als am an ang arc arz as ast av ay ba
 # override the default expected date (i.e.: current day) of the last
 # data point of a file.
 declare -A EXPECTED_LAST_DATE_OVERRIDE
-EXPECTED_LAST_DATE_OVERRIDE["bm_top10"]="2013-08-23"
-EXPECTED_LAST_DATE_OVERRIDE["ee_top10"]="2013-08-13"
-EXPECTED_LAST_DATE_OVERRIDE["ff_top10"]="2013-08-13"
 EXPECTED_LAST_DATE_OVERRIDE["global_south_editor_fractions"]="2013-08-20"
 EXPECTED_LAST_DATE_OVERRIDE["grants_count_by_global_south"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_count_by_program"]="2013-06-01"
@@ -62,24 +59,19 @@ EXPECTED_LAST_DATE_OVERRIDE["lg_all"]="2013-08-09"
 EXPECTED_LAST_DATE_OVERRIDE["lg_top10"]="2013-06-20"
 EXPECTED_LAST_DATE_OVERRIDE["pnt_all"]="2013-08-15"
 EXPECTED_LAST_DATE_OVERRIDE["pnt_top10"]="2013-08-01"
-EXPECTED_LAST_DATE_OVERRIDE["rn_all"]="2013-08-27"
 EXPECTED_LAST_DATE_OVERRIDE["rn_top10"]="2013-08-27"
-EXPECTED_LAST_DATE_OVERRIDE["roa_rup_top10"]="2013-09-07"
 EXPECTED_LAST_DATE_OVERRIDE["sg_all"]="2013-09-05"
-EXPECTED_LAST_DATE_OVERRIDE["sg_top10"]="2013-08-29"
+EXPECTED_LAST_DATE_OVERRIDE["sg_top10"]="2013-09-05"
 EXPECTED_LAST_DATE_OVERRIDE["sm_all"]="2013-09-07"
 EXPECTED_LAST_DATE_OVERRIDE["sm_top10"]="2013-09-07"
-EXPECTED_LAST_DATE_OVERRIDE["st_top10"]="2013-09-06"
 EXPECTED_LAST_DATE_OVERRIDE["ti_all"]="2013-09-07"
-EXPECTED_LAST_DATE_OVERRIDE["ti_top10"]="2013-08-23"
+EXPECTED_LAST_DATE_OVERRIDE["ti_top10"]="2013-09-07"
 EXPECTED_LAST_DATE_OVERRIDE["to_top10"]="2013-09-05"
 EXPECTED_LAST_DATE_OVERRIDE["ts_top10"]="2013-08-26"
 EXPECTED_LAST_DATE_OVERRIDE["tum_all"]="2013-08-06"
-EXPECTED_LAST_DATE_OVERRIDE["tum_top10"]="2013-08-02"
-EXPECTED_LAST_DATE_OVERRIDE["tw_top10"]="2013-08-31"
+EXPECTED_LAST_DATE_OVERRIDE["tum_top10"]="2013-08-06"
 EXPECTED_LAST_DATE_OVERRIDE["ve_all"]="2013-07-31"
 EXPECTED_LAST_DATE_OVERRIDE["ve_top10"]="2013-06-07"
-EXPECTED_LAST_DATE_OVERRIDE["xh_top10"]="2013-08-13"
 
 # Set DEBUG to "local" to download files into /tmp and use those copies
 # instead of fetching the files again and again for each run. Files do
@@ -670,7 +662,7 @@ check_csv_pt_top10() {
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Brazil (all)"         2  4 3000 4000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "France (all)"        15 25   35   80
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Germany (all)"       15 25   60  110
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Portugal (all)"       5 14  300  550
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Portugal (all)"       6 14  300  550
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Spain (all)"         15 40   20   70
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "United States (all)" 13 30   60  130
 }
