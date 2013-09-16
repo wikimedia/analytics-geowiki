@@ -18,6 +18,7 @@ import multiprocessing
 import limnpy
 #import gcat
 import wikipandas
+import pandas as pd
 
 root_logger = logging.getLogger()
 ch = logging.StreamHandler()
@@ -339,6 +340,23 @@ def process_project(project, cursor, basedir):
     write_project_top_k_mysql(project, cursor, args.basedir, k=args.k)
     #write_project_country_language(project, cursor, args.basedir)
 
+def plot_gs_editor_fraction(basedir):
+    df = pd.read_csv('data/datafiles/global_south.csv', index_col='date', parse_dates=['date'])
+    df['Global South Fraction (100+)'] = df['Global South (100+)'] / (df['Global South (100+)'] + df['Global North (100+)'] + df['Unkown (100+)']).apply(float)
+    df['Global South Fraction (5+)']   = df['Global South (5+)'] / (df['Global South (5+)'] + df['Global North (5+)'] + df['Unkown (5+)']).apply(float)
+    df['Global South Fraction (all)'] = df['Global South (all)'] / (df['Global South (all)'] + df['Global North (all)'] + df['Unkown (all)']).apply(float)
+    df_frac = df[['Global South Fraction (100+)', 'Global South Fraction (5+)', 'Global South Fraction (all)']]
+
+    ds_frac = limnpy.DataSource(limn_id='global_south_editor_fractions',
+            limn_name='Global South Editor Fractions',
+            limn_group='gp',
+            data = df_frac)
+    ds_frac.write(basedir)
+    g = ds_frac.get_graph(metric_ids=['Global South Fraction (5+)'],
+            title='Global South Active Editor Fraction',
+            graph_id='global_south_editor_fractions')
+    g.write(basedir)
+
 if __name__ == '__main__':
     args = parse_args()
 
@@ -374,5 +392,6 @@ if __name__ == '__main__':
         pool.map_async(process_project_par, itertools.izip(projects, itertools.repeat(args.basedir))).get(99999)
 
     write_overall_mysql(projects, cursor, args.basedir)
+    plot_gs_editor_fraction(args.basedir)
 
 
