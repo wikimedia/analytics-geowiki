@@ -87,6 +87,11 @@ EXPECTED_LAST_DATE_OVERRIDE["ve_top10"]="2013-06-07"
 USE_CACHE=no
 #USE_CACHE=yes
 
+# Add directories here that are checkous of the data repositories. It
+# is tried to copy data over from them instead of downloading it from
+# the web. This is mostly useful for debugging.
+LOCAL_DATA_CHECKOUTS_DIR_RELI=()
+
 #---------------------------------------------------
 # Prints the script's help screen
 #
@@ -105,6 +110,12 @@ the columns meet expectations.
 
 OPTIONS:
 --help, -h       -- prints this help page
+--add-checkout DIR
+                 -- before downloading files, try to find them in
+                    DIR. You can pass this option multiple times.
+                    This is useful for debugging, with DIR being a
+                    checkout of the geowiki-data or dashboard-data
+                    repository.
 --cache          -- cache the downloaded documents into /tmp/geowiki_monitor...
                     and reuse them on subsequent runs. This is useful
                     for debugging the script. But you'll have to
@@ -123,6 +134,7 @@ EOF
 #
 # Output:
 #   USE_CACHE
+#   LOCAL_DATA_CHECKOUTS_DIR_RELI
 #   VERBOSITY
 #
 parse_arguments() {
@@ -134,6 +146,11 @@ parse_arguments() {
             "--help" | "-h" )
                 print_help
                 exit 0
+                ;;
+            "--add-checkout" )
+		[[ $# -ge 1 ]] || error "$ARGUMENT requires a further parameter"
+		LOCAL_DATA_CHECKOUTS_DIR_RELI=( "${LOCAL_DATA_CHECKOUTS_DIR_RELI[@]}" "$1" )
+		shift
                 ;;
             "--cache" )
                 USE_CACHE="yes"
@@ -258,8 +275,66 @@ set_EXPECTED_LAST_DATE() {
 #
 do_download_file() {
     local URL="$1"
-    log "$VERBOSITY_VERBOSE" "Downloading $URL ..."
-    wget -O "$DOWNLOADED_FILE_ABS" -o /dev/null "$URL"
+
+    # LOCAL_COPY_FILE_RELI is either empty (if no local copy of $URL
+    # has yet been found), or is holds the file name to the found
+    # local copy of $URL.
+    local LOCAL_COPY_FILE_RELI=
+
+    # The file we try to find on local data checkouts.
+    local NEEDLE="$URL"
+    # Strip leading URL_BASE if present
+    if [ "${NEEDLE:0:${#URL_BASE}}" = "${URL_BASE}" ]
+    then
+	NEEDLE="${NEEDLE:${#URL_BASE}}"
+    fi
+    # Strip data and gp from /data/.../gp/ paths. This helps finding
+    # data files.
+    NEEDLE="$(echo "${NEEDLE}" | sed -e 's@^/data/\(.*\)/gp/@\1/@')"
+
+    for LOCAL_DATA_CHECKOUT_DIR_RELI in "${LOCAL_DATA_CHECKOUTS_DIR_RELI[@]}"
+    do
+	local CANDIDATE_FILE_RELI=
+
+	# Check for direct match
+	if [ -z "$LOCAL_COPY_FILE_RELI" ]
+	then
+	    local CANDIDATE_FILE_RELI="$LOCAL_DATA_CHECKOUT_DIR_RELI/$NEEDLE"
+	    if [ -e "$CANDIDATE_FILE_RELI" ]
+	    then
+		LOCAL_COPY_FILE_RELI="$CANDIDATE_FILE_RELI"
+	    fi
+	fi
+
+	# Check for json extension match. This helps to find dashboards.
+	if [ -z "$LOCAL_COPY_FILE_RELI" ]
+	then
+	    local CANDIDATE_FILE_RELI="$LOCAL_DATA_CHECKOUT_DIR_RELI/$NEEDLE.json"
+	    if [ -e "$CANDIDATE_FILE_RELI" ]
+	    then
+		LOCAL_COPY_FILE_RELI="$CANDIDATE_FILE_RELI"
+	    fi
+	fi
+
+	# Check for handmade matches
+	if [ -z "$LOCAL_COPY_FILE_RELI" ]
+	then
+	    local CANDIDATE_FILE_RELI="$LOCAL_DATA_CHECKOUT_DIR_RELI/$NEEDLE"
+	    CANDIDATE_FILE_RELI="${CANDIDATE_FILE_RELI/graphs/graphs/handmade}"
+	    if [ -e "$CANDIDATE_FILE_RELI" ]
+	    then
+		LOCAL_COPY_FILE_RELI="$CANDIDATE_FILE_RELI"
+	    fi
+	fi
+    done
+
+    if [ ! -z "$LOCAL_COPY_FILE_RELI" -a -e "$LOCAL_COPY_FILE_RELI" ]
+    then
+	cp "$LOCAL_COPY_FILE_RELI" "$DOWNLOADED_FILE_ABS"
+    else
+	log "$VERBOSITY_VERBOSE" "Downloading $URL ..."
+	wget -O "$DOWNLOADED_FILE_ABS" -o /dev/null "$URL"
+    fi
 }
 
 #---------------------------------------------------
