@@ -1102,6 +1102,12 @@ check_datasource() {
 		error "Could not find end date ${EXPECTED_LAST_DATE} for datasource '$DATASOURCE_STUB'"
 	    fi
 	    ;;
+	"json" )
+	    # Nothing to check for json format up to now
+	    ;;
+	* )
+	    error "Checks for datafile format '$DATAFILE_FORMAT' not yet implemented"
+	    ;;
     esac
 }
 
