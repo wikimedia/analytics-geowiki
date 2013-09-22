@@ -55,27 +55,42 @@ WIKIS_HARDLY_ACTIVE_EDITORS=( ab ace af ak als am an ang arc arz as ast av ay ba
 # override the default expected date (i.e.: current day) of the last
 # data point of a file.
 declare -A EXPECTED_LAST_DATE_OVERRIDE
+EXPECTED_LAST_DATE_OVERRIDE["bi_top10"]="2013-09-10"
+EXPECTED_LAST_DATE_OVERRIDE["cdo_top10"]="2013-09-11"
+EXPECTED_LAST_DATE_OVERRIDE["ch_top10"]="2013-09-14"
+EXPECTED_LAST_DATE_OVERRIDE["ff_top10"]="2013-08-20"
 EXPECTED_LAST_DATE_OVERRIDE["grants_count_by_global_south"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_count_by_program"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_spending_by_global_south"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_spending_by_program"]="2013-06-01"
+EXPECTED_LAST_DATE_OVERRIDE["ha_top10"]="2013-09-14"
+EXPECTED_LAST_DATE_OVERRIDE["ik_all"]="2013-09-14"
+EXPECTED_LAST_DATE_OVERRIDE["ik_top10"]="2013-09-14"
+EXPECTED_LAST_DATE_OVERRIDE["iu_top10"]="2013-09-15"
+EXPECTED_LAST_DATE_OVERRIDE["kaa_top10"]="2013-09-15"
+EXPECTED_LAST_DATE_OVERRIDE["ki_all"]="2013-09-15"
+EXPECTED_LAST_DATE_OVERRIDE["ki_top10"]="2013-09-15"
+EXPECTED_LAST_DATE_OVERRIDE["ks_all"]="2013-09-15"
+EXPECTED_LAST_DATE_OVERRIDE["ks_top10"]="2013-09-15"
 EXPECTED_LAST_DATE_OVERRIDE["lg_all"]="2013-08-09"
 EXPECTED_LAST_DATE_OVERRIDE["lg_top10"]="2013-06-20"
+EXPECTED_LAST_DATE_OVERRIDE["nso_all"]="2013-09-16"
+EXPECTED_LAST_DATE_OVERRIDE["nso_top10"]="2013-09-10"
+EXPECTED_LAST_DATE_OVERRIDE["ny_all"]="2013-09-14"
+EXPECTED_LAST_DATE_OVERRIDE["ny_top10"]="2013-09-14"
+EXPECTED_LAST_DATE_OVERRIDE["pi_top10"]="2013-09-16"
 EXPECTED_LAST_DATE_OVERRIDE["pnt_all"]="2013-08-15"
-EXPECTED_LAST_DATE_OVERRIDE["pnt_top10"]="2013-08-01"
+EXPECTED_LAST_DATE_OVERRIDE["pnt_top10"]="2013-07-24"
 EXPECTED_LAST_DATE_OVERRIDE["rn_top10"]="2013-08-27"
 EXPECTED_LAST_DATE_OVERRIDE["sg_all"]="2013-09-05"
-EXPECTED_LAST_DATE_OVERRIDE["sg_top10"]="2013-09-05"
-EXPECTED_LAST_DATE_OVERRIDE["sm_all"]="2013-09-07"
-EXPECTED_LAST_DATE_OVERRIDE["sm_top10"]="2013-09-07"
-EXPECTED_LAST_DATE_OVERRIDE["ti_all"]="2013-09-07"
-EXPECTED_LAST_DATE_OVERRIDE["ti_top10"]="2013-09-07"
-EXPECTED_LAST_DATE_OVERRIDE["to_top10"]="2013-09-05"
+EXPECTED_LAST_DATE_OVERRIDE["sg_top10"]="2013-08-29"
 EXPECTED_LAST_DATE_OVERRIDE["ts_top10"]="2013-08-26"
 EXPECTED_LAST_DATE_OVERRIDE["tum_all"]="2013-08-06"
-EXPECTED_LAST_DATE_OVERRIDE["tum_top10"]="2013-08-06"
+EXPECTED_LAST_DATE_OVERRIDE["tum_top10"]="2013-07-17"
+EXPECTED_LAST_DATE_OVERRIDE["tw_top10"]="2013-08-31"
 EXPECTED_LAST_DATE_OVERRIDE["ve_all"]="2013-07-31"
-EXPECTED_LAST_DATE_OVERRIDE["ve_top10"]="2013-06-07"
+EXPECTED_LAST_DATE_OVERRIDE["ve_top10"]="2013-06-09"
+EXPECTED_LAST_DATE_OVERRIDE["xh_top10"]="2013-09-08"
 
 # The parameter passed to date's 'date' option to arrive at the
 # default last date to expect from files.
@@ -833,8 +848,8 @@ check_csv_region() {
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Arab States (100+)"         8  10     70    180
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Arab States (5+)"           3   6   1000   1300
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Arab States (all)"          2   5   3500   5000
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Asia & Pacific (100+)"      2   5   1300   1700
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Asia & Pacific (5+)"        1   2  14700  15600
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Asia & Pacific (100+)"      3   5   1300   1700
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Asia & Pacific (5+)"        1   2  12500  15000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Asia & Pacific (all)"       1   2  45000  51000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "CIS (100+)"                 4   9    200    400
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "CIS (5+)"                   2   5   1500   2200
@@ -843,7 +858,7 @@ check_csv_region() {
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Europe (5+)"                2   2  35000  40000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Europe (all)"               1   2 110000 120000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (100+)"       2   5   1400   1800
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (5+)"         2   4  14000  16100
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (5+)"         2   4  12500  16100
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (all)"        2   3  50000  60000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "South/Latin America (100+)" 4   6    400    600
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "South/Latin America (5+)"   2   4   4000   6000
@@ -851,7 +866,7 @@ check_csv_region() {
     # In the following three lines, the missing n in 'Unkown' is on
     # purpose, as we currently see that in the csv.
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (100+)"             50 120      2     15
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (5+)"               12  40     80    130
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (5+)"               12  40     40    100
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (all)"              14  28    200    450
 }
 
