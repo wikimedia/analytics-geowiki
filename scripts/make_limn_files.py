@@ -312,7 +312,7 @@ def parse_args():
     return args
 
 def get_projects():
-    f = open('/home/erosen/src/dashboard/data/all_ids.tsv')
+    f = open(os.path.join(os.path.split(__file__)[0], '..', 'geowiki', 'data', 'all_ids.tsv'))
     projects = []
     for line in f:
         projects.append(line.split('\t')[0].strip())
