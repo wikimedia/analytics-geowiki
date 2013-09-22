@@ -55,7 +55,6 @@ WIKIS_HARDLY_ACTIVE_EDITORS=( ab ace af ak als am an ang arc arz as ast av ay ba
 # override the default expected date (i.e.: current day) of the last
 # data point of a file.
 declare -A EXPECTED_LAST_DATE_OVERRIDE
-EXPECTED_LAST_DATE_OVERRIDE["global_south_editor_fractions"]="2013-08-20"
 EXPECTED_LAST_DATE_OVERRIDE["grants_count_by_global_south"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_count_by_program"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_spending_by_global_south"]="2013-06-01"
