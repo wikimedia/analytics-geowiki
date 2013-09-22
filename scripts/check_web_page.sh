@@ -64,12 +64,9 @@ EXPECTED_LAST_DATE_OVERRIDE["grants_spending_by_program"]="2013-06-01"
 # to US on 2013-08-29. Hence, the column for United States is not long
 # enough
 EXPECTED_LAST_DATE_OVERRIDE["sg_all"]="2013-09-05"
-EXPECTED_LAST_DATE_OVERRIDE["sg_top10"]="2013-09-05"
-# IP of last editor for sm_top10 jumped from Netherlands to US on
-# 2013-08-29. Hence, the column for United States is not long enough.
-# sm_all is also affected by this jump, however, sm_all had an edit on
-# 2013-09-11, and is therefore expected to show daily updates.
-EXPECTED_LAST_DATE_OVERRIDE["sm_top10"]="2013-09-07"
+# The last run of top10 computations for sg did not pull in 'United
+# States'. So sg_top10 is lagging behind even further.
+EXPECTED_LAST_DATE_OVERRIDE["sg_top10"]="2013-08-29"
 
 # The parameter passed to date's 'date' option to arrive at the
 # default last date to expect from files.
@@ -834,7 +831,7 @@ check_csv_active_editors_total() {
     check_csv "$CSV_STUB"
     local CSV_FILE_ABS="$DOWNLOADED_FILE_ABS"
 
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total (100+)"  1  1    8000  10000
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total (100+)"  1  2    8000  10000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total (5+)"    1  1   70000  80000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total (all)"   1  1  230000 255000
 }
@@ -873,7 +870,7 @@ check_csv_region() {
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (100+)"       2   5   1400   1800
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (5+)"         2   4  12500  16100
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (all)"        2   3  50000  60000
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "South/Latin America (100+)" 4   6    400    600
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "South/Latin America (100+)" 4   7    400    600
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "South/Latin America (5+)"   2   4   4000   6000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "South/Latin America (all)"  2   4  16000  20000
     # In the following three lines, the missing n in 'Unkown' is on
