@@ -55,42 +55,21 @@ WIKIS_HARDLY_ACTIVE_EDITORS=( ab ace af ak als am an ang arc arz as ast av ay ba
 # override the default expected date (i.e.: current day) of the last
 # data point of a file.
 declare -A EXPECTED_LAST_DATE_OVERRIDE
-EXPECTED_LAST_DATE_OVERRIDE["bi_top10"]="2013-09-10"
-EXPECTED_LAST_DATE_OVERRIDE["cdo_top10"]="2013-09-11"
-EXPECTED_LAST_DATE_OVERRIDE["ch_top10"]="2013-09-14"
-EXPECTED_LAST_DATE_OVERRIDE["ff_top10"]="2013-08-20"
+# Grants files are not automatically generated.
 EXPECTED_LAST_DATE_OVERRIDE["grants_count_by_global_south"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_count_by_program"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_spending_by_global_south"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_spending_by_program"]="2013-06-01"
-EXPECTED_LAST_DATE_OVERRIDE["ha_top10"]="2013-09-14"
-EXPECTED_LAST_DATE_OVERRIDE["ik_all"]="2013-09-14"
-EXPECTED_LAST_DATE_OVERRIDE["ik_top10"]="2013-09-14"
-EXPECTED_LAST_DATE_OVERRIDE["iu_top10"]="2013-09-15"
-EXPECTED_LAST_DATE_OVERRIDE["kaa_top10"]="2013-09-15"
-EXPECTED_LAST_DATE_OVERRIDE["ki_all"]="2013-09-15"
-EXPECTED_LAST_DATE_OVERRIDE["ki_top10"]="2013-09-15"
-EXPECTED_LAST_DATE_OVERRIDE["ks_all"]="2013-09-15"
-EXPECTED_LAST_DATE_OVERRIDE["ks_top10"]="2013-09-15"
-EXPECTED_LAST_DATE_OVERRIDE["lg_all"]="2013-08-09"
-EXPECTED_LAST_DATE_OVERRIDE["lg_top10"]="2013-06-20"
-EXPECTED_LAST_DATE_OVERRIDE["nso_all"]="2013-09-16"
-EXPECTED_LAST_DATE_OVERRIDE["nso_top10"]="2013-09-10"
-EXPECTED_LAST_DATE_OVERRIDE["ny_all"]="2013-09-14"
-EXPECTED_LAST_DATE_OVERRIDE["ny_top10"]="2013-09-14"
-EXPECTED_LAST_DATE_OVERRIDE["pi_top10"]="2013-09-16"
-EXPECTED_LAST_DATE_OVERRIDE["pnt_all"]="2013-08-15"
-EXPECTED_LAST_DATE_OVERRIDE["pnt_top10"]="2013-07-24"
-EXPECTED_LAST_DATE_OVERRIDE["rn_top10"]="2013-08-27"
+# IP of last editor for sg_all, and sg_top10 jumped from Netherlands
+# to US on 2013-08-29. Hence, the column for United States is not long
+# enough
 EXPECTED_LAST_DATE_OVERRIDE["sg_all"]="2013-09-05"
-EXPECTED_LAST_DATE_OVERRIDE["sg_top10"]="2013-08-29"
-EXPECTED_LAST_DATE_OVERRIDE["ts_top10"]="2013-08-26"
-EXPECTED_LAST_DATE_OVERRIDE["tum_all"]="2013-08-06"
-EXPECTED_LAST_DATE_OVERRIDE["tum_top10"]="2013-07-17"
-EXPECTED_LAST_DATE_OVERRIDE["tw_top10"]="2013-08-31"
-EXPECTED_LAST_DATE_OVERRIDE["ve_all"]="2013-07-31"
-EXPECTED_LAST_DATE_OVERRIDE["ve_top10"]="2013-06-09"
-EXPECTED_LAST_DATE_OVERRIDE["xh_top10"]="2013-09-08"
+EXPECTED_LAST_DATE_OVERRIDE["sg_top10"]="2013-09-05"
+# IP of last editor for sm_top10 jumped from Netherlands to US on
+# 2013-08-29. Hence, the column for United States is not long enough.
+# sm_all is also affected by this jump, however, sm_all had an edit on
+# 2013-09-11, and is therefore expected to show daily updates.
+EXPECTED_LAST_DATE_OVERRIDE["sm_top10"]="2013-09-07"
 
 # The parameter passed to date's 'date' option to arrive at the
 # default last date to expect from files.
@@ -409,7 +388,8 @@ download_file() {
 # Downloads a csv file and does some basic checks on the file
 #
 # It is assured that
-#   * the file's last line is for the expected date,
+#   * the file's last line is for the expected date (or if that
+#     condition is met, a fallback check $2 passes),
 #   * each line of the file has the same amount of columns, and
 #   * (for stubs != "global_south_editor_fractions") that the file has
 #     at least 10 columns.
@@ -417,6 +397,11 @@ download_file() {
 # Input:
 #   $1 - The csv's stub to download. The URL to download is generated
 #        from this stub. E.g.: 'global_south', 'de_top10'.
+#   $2 - Function name for a fallback check, if the final date does
+#        not match. This function is passed the csv's stub and the
+#        absolute file name to the csv on the file system. If the
+#        function succeeds, the fallback check is assumed to have
+#        passed.
 #
 # Output:
 #   DOWNLOADED_FILE_ABS - The absolute name of the file into which the
@@ -427,6 +412,7 @@ download_file() {
 #
 check_csv() {
     local CSV_STUB="$1"
+    local DATE_FALLBACK_CHECK="$2"
     download_file "${URL_BASE_CSV}/${CSV_STUB}.csv"
 
     # We'll analyze the last line for date and number of columns
@@ -441,7 +427,12 @@ check_csv() {
     # Check for csv's date in the last line
     if [ "$EXPECTED_LAST_DATE" != "${DATE_LAST_LINE}" ]
     then
-	error "$CSV_STUB's last line is not for $EXPECTED_LAST_DATE, but '$DATE_LAST_LINE'"
+	if [ ! -z "$DATE_FALLBACK_CHECK" ]
+	then
+	    "$DATE_FALLBACK_CHECK" "$CSV_STUB" "$DOWNLOADED_FILE_ABS"
+	else
+	    error "$CSV_STUB's last line is not for $EXPECTED_LAST_DATE, but '$DATE_LAST_LINE'"
+	fi
     fi
 
     # Check that the csv has at least 10 columns
@@ -993,6 +984,107 @@ check_csv_wiki_many_active_editors() {
 }
 
 #---------------------------------------------------
+# Checks that each non-zero column is neither empty nor increasing for
+# the last 30 days
+#
+# Input:
+#   $1 - Stub of the csv's file name. E.g.: "ab_all", "li_top10"
+#   $2 - Absolute file name where the downloaded csv can be found.
+#
+# Output:
+#   -
+#
+check_csv_wiki_hardly_active_editors_date_fallback_check() {
+    local CSV_STUB="$1"
+    local DOWNLOADED_FILE_ABS="$2"
+
+    local LAST_LINE="$(tail --lines=1 "$DOWNLOADED_FILE_ABS")"
+    local DATE_LAST_LINE=${LAST_LINE%%,*}
+    DATE_LAST_LINE=${DATE_LAST_LINE////-}
+
+    # Check if date column holds consecutive days for the last 30 lines
+    local OFFSET=29
+    while [ "$OFFSET" -gt 0 ]
+    do
+	local DATE_LINE=
+	read DATE_LINE
+	DATE_LINE=${DATE_LINE////-}
+
+	local EXPECTED_DATE_LINE="$(date -d "$DATE_LAST_LINE - $OFFSET days" +'%Y-%m-%d')"
+
+	if [ "$EXPECTED_DATE_LINE" != "$DATE_LINE" ]
+	then
+	    error "In last but $OFFSET lines of $CSV_STUB, found date '$DATE_LINE' does not match expected date '$EXPECTED_DATE_LINE'"
+	fi
+	OFFSET=$(($OFFSET-1))
+    done < <( tail --lines=30 "$DOWNLOADED_FILE_ABS" | cut -f 1 -d , )
+
+    # Columns holds the number of non-zero columns in the last row. We
+    # increase this as we iterate over the columns and find non-zero
+    # columns
+    local COLUMNS=0
+
+    local COLUMN_REST="${LAST_LINE#*,}"
+    local COLUMN_IDX=2
+    while [ ! -z "$COLUMN_REST" ]
+    do
+	# Extract next column
+	local COLUMN="${COLUMN_REST%%,*}"
+
+	# Update COLUMN_REST
+	if [ "$COLUMN_REST" = "$COLUMN" ]
+	then
+	    # Could not find another ',', hence we're treating the
+	    # last column.
+	    COLUMN_REST=
+	else
+	    COLUMN_REST="${COLUMN_REST#*,}"
+	fi
+	if [ ! -z "$COLUMN" ]
+	then
+	    # We found a column that is non-zero in the csv's bottom row.
+	    COLUMNS=$((COLUMNS+1))
+
+	    # Check if that column is neither increasing, nor empty for the last 30 rows.
+	    local PREVIOUS_NUMBER=
+	    while read LINE
+	    do
+		NUMBER=${LINE%.0}
+		if [ -z "$NUMBER" ]
+		then
+		    error "Column $COLUMN_IDX of '$CSV_STUB' contains an empty entry in the last 30 rows, although the final row is not empty"
+		else
+		    if [[ "$NUMBER" =~ ^[0-9]*$ ]]
+		    then
+			if [ -z "$PREVIOUS_NUMBER" ]
+			then
+			    # Special case for first of the last 30 lines.
+			    PREVIOUS_NUMBER="$NUMBER"
+			else
+			    # 2nd, 3rd, ... of the last 30 lines.
+			    if [ "$PREVIOUS_NUMBER" -lt "$NUMBER" -a "$NUMBER" -gt 0 ]
+			    then
+				error "Column $COLUMN_IDX of '$CSV_STUB' increased in the last 30 rows, although the final row is not empty"
+			    fi
+			fi
+		    else
+			error "Entry '$LINE' of column $COLUMN_IDX of '$CSV_STUB' does not look like a number"
+		    fi
+		fi
+	    done < <( tail --lines=30 "$DOWNLOADED_FILE_ABS" | cut -f $COLUMN_IDX -d , )
+	fi
+
+	COLUMN_IDX=$((COLUMN_IDX+1))
+    done
+
+    # Assert thaht at least one column was non-empty and non-zero
+    if [ "$COLUMNS" -le 0 ]
+    then
+	error "Could not find non-zero column at bottom of '$CSV_STUB'"
+    fi
+}
+
+#---------------------------------------------------
 # Checks expectations for a csv of a wiki with hardly any active editors.
 #
 # It is assured that
@@ -1009,7 +1101,7 @@ check_csv_wiki_hardly_active_editors() {
     local CSV_STUB="$1"
 
     local DOWNLOADED_FILE_ABS=
-    check_csv "$CSV_STUB"
+    check_csv "$CSV_STUB" check_csv_wiki_hardly_active_editors_date_fallback_check
     local CSV_FILE_ABS="$DOWNLOADED_FILE_ABS"
 
     local MAXIMUM=
