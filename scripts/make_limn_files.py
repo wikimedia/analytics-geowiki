@@ -112,15 +112,19 @@ def write_project_top_k_mysql(proj, cursor,  basedir, k=10):
     limn_name = '%s Editors by Country (top %d)' % (proj.upper(), k)
 
     if sql.paramstyle == 'qmark':
-        top_k_query = """SELECT DISTINCT(country)
+        top_k_query = """SELECT country
                     FROM erosen_geocode_active_editors_country
-                    WHERE project=? AND cohort='all'
-                    ORDER BY count DESC LIMIT ?"""
+                    WHERE project=? AND cohort='all' AND end = start+INTERVAL 30 day
+                    GROUP BY country
+                    ORDER BY SUM(count) DESC, end DESC, country
+                    LIMIT ?"""
     elif sql.paramstyle == 'format':
-        top_k_query = """SELECT DISTINCT(country)
+        top_k_query = """SELECT country
                     FROM erosen_geocode_active_editors_country
-                    WHERE project=%s AND cohort='all'
-                    ORDER BY count DESC LIMIT %s"""
+                    WHERE project=%s AND cohort='all' AND end = start+INTERVAL 30 day
+                    GROUP BY country
+                    ORDER BY SUM(count) DESC, end DESC, country
+                    LIMIT %s"""
         logger.debug('top k query: %s', top_k_query % (proj, k))
     cursor.execute(top_k_query, (proj, k)) # mysqldb first converts all args to str
     top_k = map(itemgetter('country'), cursor.fetchall())
