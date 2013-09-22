@@ -71,7 +71,7 @@ EXPECTED_LAST_DATE_OVERRIDE["sg_top10"]="2013-08-29"
 
 # The parameter passed to date's 'date' option to arrive at the
 # default last date to expect from files.
-DEFAULT_LAST_EXPECTED_DATE_PARAMETER="today"
+DEFAULT_LAST_EXPECTED_DATE_PARAMETER="yesterday"
 
 # Set USE_CACHE to "yes" to download files into /tmp and use those
 # copies instead of fetching the files again and again for each
@@ -118,7 +118,7 @@ OPTIONS:
                     on your own.
 --date DATE      -- per default expect that all datafiles come with data up to,
                     and including DATE. DATE can be any value accepted by
-                    date's --date option. (Default: "today")
+                    date's --date option. (Default: "yesterday")
 --quiet          -- suppress all messages but errors.
 --verbose        -- More verbose output.
 
