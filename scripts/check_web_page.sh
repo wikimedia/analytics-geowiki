@@ -391,8 +391,9 @@ download_file() {
 #   * the file's last line is for the expected date (or if that
 #     condition is met, a fallback check $2 passes),
 #   * each line of the file has the same amount of columns, and
-#   * (for stubs != "global_south_editor_fractions") that the file has
-#     at least 10 columns.
+#   * (for stubs != "global_south_editor_fractions", and
+#     != "active_editors_total") that the file has at least 10
+#     columns.
 #
 # Input:
 #   $1 - The csv's stub to download. The URL to download is generated
@@ -436,7 +437,7 @@ check_csv() {
     fi
 
     # Check that the csv has at least 10 columns
-    if [ "$CSV_STUB" != "global_south_editor_fractions" ]
+    if [ "$CSV_STUB" != "global_south_editor_fractions" -a "$CSV_STUB" != "active_editors_total" ]
     then
 	if [ "$(tr ',' '\n' <<<"$LAST_LINE" | wc -l)" -lt 10 ]
 	then
@@ -815,6 +816,27 @@ check_csv_global_south_editor_fractions() {
     check_csv_column "$CSV_STUB" "$CSV_RESCALED_FILE_ABS" "Global South Fraction (100+)" 2  5 15000 19000
     check_csv_column "$CSV_STUB" "$CSV_RESCALED_FILE_ABS" "Global South Fraction (5+)"   1  2 17000 21000
     check_csv_column "$CSV_STUB" "$CSV_RESCALED_FILE_ABS" "Global South Fraction (all)"  1  2 18000 22000
+}
+
+#---------------------------------------------------
+# Asserts that the active_editors_total is ok
+#
+# Input:
+#   $1 - Stub of the csv's file name.
+#
+# Output:
+#   -
+#
+check_csv_active_editors_total() {
+    local CSV_STUB="active_editors_total"
+
+    local DOWNLOADED_FILE_ABS=
+    check_csv "$CSV_STUB"
+    local CSV_FILE_ABS="$DOWNLOADED_FILE_ABS"
+
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total (100+)"  1  1    8000  10000
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total (5+)"    1  1   70000  80000
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total (all)"   1  1  230000 255000
 }
 
 #---------------------------------------------------
@@ -1348,6 +1370,7 @@ check_dashboards() {
 #
 check_graphs() {
     check_graph active_editors_by_region
+    check_graph active_editors_total
     check_graph global_north_south_active_editors
     check_graph global_south_editor_fractions
     check_graph grants_count_by_global_south
@@ -1368,6 +1391,7 @@ check_graphs() {
 #   -
 #
 check_datasources() {
+    check_datasource_json active_editors_total csv
     check_datasource_json global_south        csv
     check_datasource_yaml map-world_countries json
     check_datasource_json pt_top10            csv
@@ -1396,6 +1420,7 @@ check_datasources() {
 #   -
 #
 check_datafiles() {
+    check_csv_active_editors_total
     check_csv_global_south
     check_csv_global_south_editor_fractions
     check_csv_region
