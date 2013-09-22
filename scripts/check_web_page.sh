@@ -28,6 +28,7 @@ trap "cleanup" EXIT
 SCRIPT_DIR_ABS="$(dirname "$0")"
 
 # Verbosity levels
+VERBOSITY_QUIET=9
 VERBOSITY_NORMAL=10
 VERBOSITY_VERBOSE=11
 VERBOSITY="$VERBOSITY_NORMAL"
@@ -118,6 +119,7 @@ OPTIONS:
 --date DATE      -- per default expect that all datafiles come with data up to,
                     and including DATE. DATE can be any value accepted by
                     date's --date option. (Default: "today")
+--quiet          -- suppress all messages but errors.
 --verbose        -- More verbose output.
 
 EOF
@@ -157,6 +159,9 @@ parse_arguments() {
 		[[ $# -ge 1 ]] || error "$ARGUMENT requires a further parameter"
                 DEFAULT_LAST_EXPECTED_DATE_PARAMETER="$1"
 		shift
+                ;;
+            "--quiet" )
+                VERBOSITY="$VERBOSITY_QUIET"
                 ;;
             "--verbose" )
                 VERBOSITY="$VERBOSITY_VERBOSE"
