@@ -1,9 +1,9 @@
 '''
 
-ETL for geo coding entries from the recentchanges table. 
+ETL for geo coding entries from the recentchanges table.
 
 1. Country, total editors, total active editors (5+), total very active editors (100+)
-2. Country, top 10 cities, percentage of total edits from each city  
+2. Country, top 10 cities, percentage of total edits from each city
 
 
 '''
@@ -57,7 +57,7 @@ def extract(source,filter_ids,geoIP_db,sep=None):
             res = line[:-1].split(sep)
         else:
             res = line
-        
+
         user = res[0]
 
         # filter!
@@ -80,9 +80,9 @@ def extract(source,filter_ids,geoIP_db,sep=None):
             country = 'Invalid IP'
 
         if record:
-            city = record['city'] 
-            country = record['country_name'] 
-            
+            city = record['city']
+            country = record['country_name']
+
             if city=='' or city==' ':
                 city = "Unknown"
 
@@ -105,7 +105,7 @@ def extract(source,filter_ids,geoIP_db,sep=None):
         else:
             cities[country][city] = 1
 
-        
+
         # country -> editors data
 
         if user not in editors:
@@ -128,7 +128,7 @@ def get_active_editors(wp_pr, editors, opts):
     ### Editor activity
 
     editor_counts = defaultdict(lambda : defaultdict(int))
-    
+
     bins = map(str,range(1,11))
     bins = bins + ['%d-%d' % (thresh, thresh + 10) for thresh in range(0,100,10)]
     bins = bins + ['all', '5+', '100+']
@@ -144,17 +144,17 @@ def get_active_editors(wp_pr, editors, opts):
                 country_nest[country]["all"] +=1
                 world_nest["all"] += 1
                 if count >= 5:
-                    country_nest[country]["5+"] +=1                 
+                    country_nest[country]["5+"] +=1
                     world_nest["5+"] += 1
                     if count >= 100:
-                        country_nest[country]["100+"] +=1 
+                        country_nest[country]["100+"] +=1
                         world_nest["100+"] += 1
             if count <= 10:
                 country_nest[country]['%d' % count] += 1
             if count < 100:
                 bottom = 10 * (int(count) / 10)
                 country_nest[country]['%s-%s' % (bottom, bottom + 10)] += 1
-                
+
 
     #flatten
     country_rows = []
@@ -191,8 +191,8 @@ def get_city_edits(wp_pr, countries, opts):
     start_str = opts['start'].isoformat()
     end_str = opts['end'].isoformat()
     for country,cities in countries.iteritems():
-        
-        city_info_sorted = sorted(cities.iteritems(),key=operator.itemgetter(1),reverse=True)   
+
+        city_info_sorted = sorted(cities.iteritems(),key=operator.itemgetter(1),reverse=True)
         totaledits = sum([c[1] for c in city_info_sorted])
         row = {'project' : wp_pr,
                'country' : country,

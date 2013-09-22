@@ -50,11 +50,11 @@ def construct_cu_query(wp_pr, start, end):
         * `20120525`, the last 30 days from the day passed.
         * None, last 30 days from now()
 
-    Note:   
+    Note:
         The checkuser `cu_changes` table contains data for the last three month only!
 
-    :arg ts: str, timestamp '201205'. If None, last 30 days will be used. 
-    ''' 
+    :arg ts: str, timestamp '201205'. If None, last 30 days will be used.
+    '''
     def wiki_timestamp(dt):
         return datetime.strftime(dt,'%Y%m%d%H%M%S')
 
@@ -70,8 +70,8 @@ def construct_cu_query(wp_pr, start, end):
     #       d = int(ts[6:8])
     #       thirty = timedelta(days=30)
     #       end = datetime(y, m, d, 23, 59, 59)
-    #       start = end-thirty      
-    # else:     
+    #       start = end-thirty
+    # else:
     #   thirty = timedelta(days=30)
     #   end = datetime.now()
     #   start = end-thirty
@@ -86,13 +86,13 @@ cluster_mapping = {'enwiki':'s1','bgwiki':'s2','bgwiktionary':'s2','cswiki':'s2'
 
 # new CNAME system.
 # TODO: abstract mapping to a use just number and then autogenerate CNAMES aliases
-db_mapping = {'s1':'s1-analytics-slave.eqiad.wmnet', 
-          's2':'s2-analytics-slave.eqiad.wmnet', 
+db_mapping = {'s1':'s1-analytics-slave.eqiad.wmnet',
+          's2':'s2-analytics-slave.eqiad.wmnet',
           's3':'s3-analytics-slave.eqiad.wmnet',
           's4':'s4-analytics-slave.eqiad.wmnet',
-          's5':'s5-analytics-slave.eqiad.wmnet', 
+          's5':'s5-analytics-slave.eqiad.wmnet',
           's6':'s6-analytics-slave.eqiad.wmnet',
-          's7':'s7-analytics-slave.eqiad.wmnet', 
+          's7':'s7-analytics-slave.eqiad.wmnet',
           }
 
 def get_db_name(wp_pr):
@@ -124,7 +124,7 @@ def get_analytics_cursor(wp_pr, opts, server_side=False):
     '''
     db = get_analytics_db_connection(wp_pr, opts)
     cur = db.cursor(MySQLdb.cursors.SSCursor) if server_side else db.cursor(MySQLdb.cursors.Cursor)
-    
+
     return cur
 
 
@@ -222,7 +222,7 @@ def write_city_edit_fraction_mysql(city_edit_fractions, opts, cursor):
     dict_fmt = ', '.join(map(lambda f : '%%(%s)s' % f, fields))
     query_fmt = """REPLACE INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
     cursor.executemany(query_fmt, city_edit_fractions)
-    cursor.connection.commit()  
+    cursor.connection.commit()
 
 
 def write_country_total_edits_mysql(country_totals, opts, cursor):
