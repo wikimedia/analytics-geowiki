@@ -1055,15 +1055,15 @@ check_graph() {
 #   * the file contains a name node that is a string.
 #
 # Input:
-#   $1 - The file's format. I.e.: "json" or "csv"
-#   $2 - The file's stub. E.g.: "active_editors_by_region",
+#   $1 - The datafile's format. I.e.: "json" or "csv"
+#   $2 - The datasource's stub. E.g.: "active_editors_by_region",
 #        "pt_top10".
 #
 # Output:
 #   -
 #
 check_datasource() {
-    local DATASOURCE_FORMAT="$1"
+    local DATAFILE_FORMAT="$1"
     local DATASOURCE_STUB="$2"
 
     local DOWNLOADED_FILE_ABS=
@@ -1073,9 +1073,9 @@ check_datasource() {
     # We do not parse the json, just to some further datasource specific checks.
 
     # check for format
-    if ! grep -q '"format"[[:space:]]*:[[:space:]]*"'"$DATASOURCE_FORMAT"'"' "${DOWNLOADED_FILE_ABS}"
+    if ! grep -q '"format"[[:space:]]*:[[:space:]]*"'"$DATAFILE_FORMAT"'"' "${DOWNLOADED_FILE_ABS}"
     then
-	error "Could not find marker for format '$DATASOURCE_FORMAT' for datasource '$DATASOURCE_STUB'"
+	error "Could not find marker for format '$DATAFILE_FORMAT' for datasource '$DATASOURCE_STUB'"
     fi
 
     # check for URL
@@ -1085,7 +1085,7 @@ check_datasource() {
     then
 	EXPECTED_URL="/data/geo/gp/maps/world-countries.json"
     else
-	EXPECTED_URL="/data/datafiles/gp/$DATASOURCE_STUB.$DATASOURCE_FORMAT"
+	EXPECTED_URL="/data/datafiles/gp/$DATASOURCE_STUB.$DATAFILE_FORMAT"
     fi
     if ! grep -q '"url"[[:space:]]*:[[:space:]]*"'"$EXPECTED_URL"'"' "${DOWNLOADED_FILE_ABS}"
     then
@@ -1093,7 +1093,7 @@ check_datasource() {
     fi
 
     # Format specific checks
-    case "$DATASOURCE_FORMAT" in
+    case "$DATAFILE_FORMAT" in
 	"csv" )
 	    # Check for end date
 	    set_EXPECTED_LAST_DATE "$DATASOURCE_STUB"
