@@ -1447,4 +1447,4 @@ check() {
 parse_arguments "$@"
 check
 
-echo "geowiki: Ok"
+log "$VERBOSITY_NORMAL" "geowiki: Ok"
