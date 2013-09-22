@@ -78,6 +78,10 @@ EXPECTED_LAST_DATE_OVERRIDE["tum_top10"]="2013-08-06"
 EXPECTED_LAST_DATE_OVERRIDE["ve_all"]="2013-07-31"
 EXPECTED_LAST_DATE_OVERRIDE["ve_top10"]="2013-06-07"
 
+# The parameter passed to date's 'date' option to arrive at the
+# default last date to expect from files.
+DEFAULT_LAST_EXPECTED_DATE_PARAMETER="today"
+
 # Set USE_CACHE to "yes" to download files into /tmp and use those
 # copies instead of fetching the files again and again for each
 # run. Files do not get removed upon script exit. This is only useful
@@ -121,6 +125,9 @@ OPTIONS:
                     for debugging the script. But you'll have to
                     cleanup the /tmp/geowiki_monitor... files by hand
                     on your own.
+--date DATE      -- per default expect that all datafiles come with data up to,
+                    and including DATE. DATE can be any value accepted by
+                    date's --date option. (Default: "today")
 --verbose        -- More verbose output.
 
 EOF
@@ -136,6 +143,7 @@ EOF
 #   USE_CACHE
 #   LOCAL_DATA_CHECKOUTS_DIR_RELI
 #   VERBOSITY
+#   DEFAULT_LAST_EXPECTED_DATE_PARAMETER
 #
 parse_arguments() {
     while [ $# -gt 0 ]
@@ -154,6 +162,11 @@ parse_arguments() {
                 ;;
             "--cache" )
                 USE_CACHE="yes"
+                ;;
+            "--date" )
+		[[ $# -ge 1 ]] || error "$ARGUMENT requires a further parameter"
+                DEFAULT_LAST_EXPECTED_DATE_PARAMETER="$1"
+		shift
                 ;;
             "--verbose" )
                 VERBOSITY="$VERBOSITY_VERBOSE"
@@ -254,7 +267,7 @@ set_EXPECTED_LAST_DATE() {
     EXPECTED_LAST_DATE="${EXPECTED_LAST_DATE_OVERRIDE[$STUB]}"
     if [ -z "$EXPECTED_LAST_DATE" ]
     then
-	EXPECTED_LAST_DATE="$(date +'%Y-%m-%d')"
+	EXPECTED_LAST_DATE="$(date --date="$DEFAULT_LAST_EXPECTED_DATE_PARAMETER" +'%Y-%m-%d')"
     fi
 }
 
