@@ -367,27 +367,24 @@ def plot_active_editor_totals(basedir):
     Keyword arguments:
     basedir -- string. Path to the data repository
 
-    This function computes the total number of active editors for the
-    'all', '5+', and '100+' cohorts and writes out the necessary
-    datafile, datasource, and graph files to show them in Limn. Those
-    files get written into the corresponding subdirectories of
-    basedir.
+    This function computes the total number of active editors and
+    writes out the necessary datafile, datasource, and graph files to
+    show them in Limn. Those files get written into the corresponding
+    subdirectories of basedir.
 
     For the computation of the data, this function relies solely on
     the global_south.csv file.
     """
     df = pd.read_csv(basedir + '/datafiles/global_south.csv', index_col='date', parse_dates=['date'])
-    df['Active Editors Total (100+)'] = (df['Global South (100+)'] + df['Global North (100+)'] + df['Unkown (100+)']).apply(float)
-    df['Active Editors Total (5+)']   = (df['Global South (5+)']   + df['Global North (5+)']   + df['Unkown (5+)']  ).apply(float)
-    df['Active Editors Total (all)']  = (df['Global South (all)']  + df['Global North (all)']  + df['Unkown (all)'] ).apply(float)
-    df_total = df[['Active Editors Total (100+)', 'Active Editors Total (5+)', 'Active Editors Total (all)']]
+    df['Active Editors Total']   = (df['Global South (5+)']   + df['Global North (5+)']   + df['Unkown (5+)']  ).apply(float)
+    df_total = df[['Active Editors Total']]
 
     ds_total = limnpy.DataSource(limn_id='active_editors_total',
             limn_name='Active Editors Total',
             limn_group=LIMN_GROUP,
             data = df_total)
     ds_total.write(basedir)
-    g = ds_total.get_graph(metric_ids=['Active Editors Total (100+)', 'Active Editors Total (5+)', 'Active Editors Total (all)'],
+    g = ds_total.get_graph(metric_ids=['Active Editors Total'],
             title='Active Editors Total',
             graph_id='active_editors_total')
     g.write(basedir)
