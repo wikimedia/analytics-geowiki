@@ -385,8 +385,18 @@ def plot_active_editor_totals(basedir):
             data = df_total)
     ds_total.write(basedir)
     g = ds_total.get_graph(metric_ids=['Active Editors Total'],
-            title='Active Editors Total',
+            title='Active Editors Total (Tentative)',
             graph_id='active_editors_total')
+    g.graph['desc']="""This graph currently over-reports by counting each
+active editor once for each distinct pair of project and country
+associated to the IP addresses used by the editor.
+
+Also, this graph currently only considers the following projects
+(no wikidata, no wiktionaries, no wikiquotes, no wikibooks):
+
+    """ + ("wiki, ".join(sorted(get_projects()))) + """wiki
+
+"""
     g.write(basedir)
 
 if __name__ == '__main__':
