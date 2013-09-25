@@ -361,6 +361,16 @@ def plot_gs_editor_fraction(basedir):
             graph_id='global_south_editor_fractions')
     g.write(basedir)
 
+def drop_callout_widget(g):
+    """Drop the callout widget from a graph
+
+    Keyword arguments:
+    graph -- limnpy Graph. Drop the change widget from this graph.
+    """
+    g.graph["root"]["children"] = [ widget \
+        for widget in g.graph["root"]["children"] \
+            if "nodeType" not in widget or widget["nodeType"] != "callout" ]
+
 def plot_active_editor_totals(basedir):
     """Write out files for 'Active Editors Total' graph
 
@@ -397,6 +407,7 @@ Also, this graph currently only considers the following projects
     """ + ("wiki, ".join(sorted(get_projects()))) + """wiki
 
 """
+    drop_callout_widget(g)
     g.write(basedir)
 
 if __name__ == '__main__':
