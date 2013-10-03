@@ -81,6 +81,27 @@ DEBUG=
 #DEBUG=local
 
 #---------------------------------------------------
+# Parses arguments to the script
+#
+# Input:
+#   $1, $2, ... arguments that should get processed
+#
+# Output:
+#   -
+#
+parse_arguments() {
+    while [ $# -gt 0 ]
+    do
+	local ARGUMENT="$1"
+	shift
+        case "$ARGUMENT" in
+	    * )
+		error "unknown argument '$ARGUMENT'"
+        esac
+    done
+}
+
+#---------------------------------------------------
 # Dumps an error message to stderr and exits the script
 #
 # Concatenation of "Error:" $1, $2, ... gets used as error message.
@@ -1040,6 +1061,7 @@ check() {
 
 #---------------------------------------------------
 
+parse_arguments "$@"
 check
 
 echo "geowiki: Ok"
