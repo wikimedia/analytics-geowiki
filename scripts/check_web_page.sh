@@ -27,6 +27,11 @@ trap "cleanup" EXIT
 # Absolute path to this script
 SCRIPT_DIR_ABS="$(dirname "$0")"
 
+# Verbosity levels
+VERBOSITY_NORMAL=10
+VERBOSITY_VERBOSE=11
+VERBOSITY="$VERBOSITY_NORMAL"
+
 # Urls to download files from
 URL_BASE="http://gp.wmflabs.org/"
 URL_BASE_DASHBOARD="$URL_BASE/dashboards"
@@ -105,6 +110,7 @@ OPTIONS:
                     for debugging the script. But you'll have to
                     cleanup the /tmp/geowiki_monitor... files by hand
                     on your own.
+--verbose        -- More verbose output.
 
 EOF
 }
@@ -117,6 +123,7 @@ EOF
 #
 # Output:
 #   USE_CACHE
+#   VERBOSITY
 #
 parse_arguments() {
     while [ $# -gt 0 ]
@@ -130,6 +137,9 @@ parse_arguments() {
                 ;;
             "--cache" )
                 USE_CACHE="yes"
+                ;;
+            "--verbose" )
+                VERBOSITY="$VERBOSITY_VERBOSE"
                 ;;
 	    * )
 		error "unknown argument '$ARGUMENT'"
@@ -151,6 +161,27 @@ parse_arguments() {
 error() {
     echo "Error: $@" >&2
     exit 1
+}
+
+#---------------------------------------------------
+# Logs a message if its not above the verbosity threshold
+#
+# Concatenation of "Error:" $1, $2, ... gets used as error message.
+#
+# Input:
+#   $1 - Verbosity threshold
+#   $2, $3, ... used as message
+#
+# Output:
+#   -
+#
+log() {
+    local MESSAGE_VERBOSITY="$1"
+    shift
+    if [ "$MESSAGE_VERBOSITY" -le "$VERBOSITY" ]
+    then
+	echo "$@"
+    fi
 }
 
 #---------------------------------------------------
@@ -227,6 +258,7 @@ set_EXPECTED_LAST_DATE() {
 #
 do_download_file() {
     local URL="$1"
+    log "$VERBOSITY_VERBOSE" "Downloading $URL ..."
     wget -O "$DOWNLOADED_FILE_ABS" -o /dev/null "$URL"
 }
 
