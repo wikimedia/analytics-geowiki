@@ -81,6 +81,28 @@ DEBUG=
 #DEBUG=local
 
 #---------------------------------------------------
+# Prints the script's help screen
+#
+# Input:
+#   -
+#
+# Output:
+#   -
+#
+print_help() {
+    cat <<EOF
+check_web_page.sh [ OPTIONS ]
+
+checks if the data served for the geowiki repository is up-to-date and
+the columns meet expectations.
+
+OPTIONS:
+--help, -h       -- prints this help page
+
+EOF
+}
+
+#---------------------------------------------------
 # Parses arguments to the script
 #
 # Input:
@@ -95,6 +117,10 @@ parse_arguments() {
 	local ARGUMENT="$1"
 	shift
         case "$ARGUMENT" in
+            "--help" | "-h" )
+                print_help
+                exit 0
+                ;;
 	    * )
 		error "unknown argument '$ARGUMENT'"
         esac
