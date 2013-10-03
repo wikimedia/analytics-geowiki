@@ -7,10 +7,10 @@
 set -e
 
 # Automatic cleanup of temporary file by trapping EXIT. (See
-# DEBUG=local below)
+# USE_CACHE variable below)
 TMP_FILES_ABS=()
 cleanup() {
-    if [ "$DEBUG" != "local" ]
+    if [ "$USE_CACHE" != "yes" ]
     then
 	for TMP_FILE_ABS in "${TMP_FILES_ABS[@]}"
 	do
@@ -73,12 +73,12 @@ EXPECTED_LAST_DATE_OVERRIDE["tum_top10"]="2013-08-06"
 EXPECTED_LAST_DATE_OVERRIDE["ve_all"]="2013-07-31"
 EXPECTED_LAST_DATE_OVERRIDE["ve_top10"]="2013-06-07"
 
-# Set DEBUG to "local" to download files into /tmp and use those copies
-# instead of fetching the files again and again for each run. Files do
-# not get removed upon script exit. This is only useful when
-# debugging/developing the script
-DEBUG=
-#DEBUG=local
+# Set USE_CACHE to "yes" to download files into /tmp and use those
+# copies instead of fetching the files again and again for each
+# run. Files do not get removed upon script exit. This is only useful
+# when debugging/developing the script.
+USE_CACHE=no
+#USE_CACHE=yes
 
 #---------------------------------------------------
 # Prints the script's help screen
@@ -147,8 +147,8 @@ error() {
 # Creates a temporary file
 #
 # The temporary file gets added to the TMP_FILES_ABS array, and hence
-# removed upon exit of the script, if not in DEBUG=local mode. (See
-# trap at top of this script).
+# removed upon exit of the script, if not in using caching. (See trap
+# at top of this script).
 #
 # Input:
 #   $1 - stencil to be used for the temporary file. This stencil gets
@@ -157,8 +157,8 @@ error() {
 #
 # Output:
 #   TMP_FILE_ABS - The absolucte name of the created temporary file. Do
-#       not clean up the file. It is removed automatically (when not
-#       in DEBUG=local).
+#       not clean up the file. It is removed automatically when not
+#       using caching.
 #
 mktemp_file() {
     local NAME="$1"
@@ -206,7 +206,7 @@ set_EXPECTED_LAST_DATE() {
 # Rather use the download_file function instead, as do_download_file
 # does not pick up previously downloaded files.
 #
-# This function does not respect DEBUG=local.
+# This function overrides caching, and forces downloading the URL.
 #
 # Input:
 #   $1 - The url to download
@@ -223,14 +223,13 @@ do_download_file() {
 #---------------------------------------------------
 # Downloads a URL to $DOWNLOADED_FILE_ABS.
 #
-# When not in DEBUG=local mode, the file is downloaded from the given
-# URL into a temporary file (which automatically gets removed upon
-# script exit). The name of this temporary file is passed back.
+# When not using caching, the file is downloaded from the given URL
+# into a temporary file (which automatically gets removed upon script
+# exit). The name of this temporary file is passed back.
 #
-# When in DEBUG=local mode, a canonical file name for the URL is
-# generated under /tmp/. If the file does not exist, the URL gets
-# downloaded into this URL. The canonical file name for the URL is
-# returned.
+# When using caching, a canonical file name for the URL is generated
+# under /tmp/. If the file does not exist, the URL gets downloaded
+# into this URL. The canonical file name for the URL is returned.
 #
 # Input:
 #   $1 - The url to download
@@ -238,16 +237,16 @@ do_download_file() {
 # Output:
 #   DOWNLOADED_FILE_ABS - The absolute name of the file into which the
 #       URL's content can be found. Do not modify this file, as it may
-#       be reused for different runs, when in DEBUG=local mode. Do not
-#       clean up the file. It is removed automatically (when not in
-#       DEBUG=local).
+#       be reused for different runs, when using caching. Do not clean
+#       up the file. It is removed automatically when not using
+#       caching.
 #
 download_file() {
     local URL="$1"
 
     local SAFE_URL="$(echo "$URL" | sed -e 's/[^a-zA-Z0-9_.-]/_/g')"
 
-    if [ "$DEBUG" = "local" ]
+    if [ "$USE_CACHE" = "yes" ]
     then
 	DOWNLOADED_FILE_ABS=/tmp/geowiki_monitor."$SAFE_URL"
 	if [ ! -e "$DOWNLOADED_FILE_ABS" ]
@@ -278,9 +277,9 @@ download_file() {
 # Output:
 #   DOWNLOADED_FILE_ABS - The absolute name of the file into which the
 #       URL's content can be found. Do not modify this file, as it may
-#       be reused for different runs, when in DEBUG=local mode. Do not
-#       clean up the file. It is removed automatically (when not in
-#       DEBUG=local).
+#       be reused for different runs, when using caching. Do not clean
+#       up the file. It is removed automatically when not using
+#       caching.
 #
 check_csv() {
     local CSV_STUB="$1"
@@ -336,9 +335,9 @@ check_csv() {
 # Output:
 #   DOWNLOADED_FILE_ABS - The absolute name of the file into which the
 #       URL's content can be found. Do not modify this file, as it may
-#       be reused for different runs, when in DEBUG=local mode. Do not
-#       clean up the file. It is removed automatically (when not in
-#       DEBUG=local).
+#       be reused for different runs, when using caching. Do not clean
+#       up the file. It is removed automatically when not using
+#       caching.
 #
 check_json() {
     local KIND="$1"
