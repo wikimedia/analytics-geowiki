@@ -77,6 +77,8 @@ EXPECTED_LAST_DATE_OVERRIDE["ve_top10"]="2013-06-07"
 # copies instead of fetching the files again and again for each
 # run. Files do not get removed upon script exit. This is only useful
 # when debugging/developing the script.
+#
+# (You can use the --cache parameter to set USE_CACHE=yes temporarily)
 USE_CACHE=no
 #USE_CACHE=yes
 
@@ -98,6 +100,11 @@ the columns meet expectations.
 
 OPTIONS:
 --help, -h       -- prints this help page
+--cache          -- cache the downloaded documents into /tmp/geowiki_monitor...
+                    and reuse them on subsequent runs. This is useful
+                    for debugging the script. But you'll have to
+                    cleanup the /tmp/geowiki_monitor... files by hand
+                    on your own.
 
 EOF
 }
@@ -109,7 +116,7 @@ EOF
 #   $1, $2, ... arguments that should get processed
 #
 # Output:
-#   -
+#   USE_CACHE
 #
 parse_arguments() {
     while [ $# -gt 0 ]
@@ -120,6 +127,9 @@ parse_arguments() {
             "--help" | "-h" )
                 print_help
                 exit 0
+                ;;
+            "--cache" )
+                USE_CACHE="yes"
                 ;;
 	    * )
 		error "unknown argument '$ARGUMENT'"
