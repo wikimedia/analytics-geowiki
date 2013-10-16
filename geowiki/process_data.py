@@ -3,7 +3,7 @@
 """
 # Geodata
 
-Export geo location data from the recent_changes table. The script is running multiple languages in parallel using the `multiprocessing` module. 
+Export geo location data from the recent_changes table. The script is running multiple languages in parallel using the `multiprocessing` module.
 
 """
 
@@ -37,14 +37,14 @@ def run_parallel(opts):
     # wp_projects =  ['ar','pt','hi','en']
     partial_process_project = functools.partial(process_project, opts=opts)
     p.map(partial_process_project, opts['wp_projects'])
-    
+
     logger.info('All projects done. Results are in %s'%(opts['output_dir']))
 
 
 def mysql_resultset(wp_pr, start, end, opts):
-    '''Returns an iterable MySql resultset using a server side cursor that can be used to iterate the data. Alternavively, the `dump_data_iterator()` method dumps the data onto disk before  aggregation. 
+    '''Returns an iterable MySql resultset using a server side cursor that can be used to iterate the data. Alternavively, the `dump_data_iterator()` method dumps the data onto disk before  aggregation.
     '''
-    # query = mysql_config.construct_rc_query(db_name)  
+    # query = mysql_config.construct_rc_query(db_name)
     query = mysql_config.construct_cu_query(wp_pr=wp_pr,start=start, end=end)
     logger.debug("SQL query for %s for start=%s, end=%s:\n\t%s"%(wp_pr, start, end, query))
 
@@ -55,7 +55,7 @@ def mysql_resultset(wp_pr, start, end, opts):
 
 
 def retrieve_bot_list(wp_pr, opts):
-    '''Returns a set of all known bots for `wp_pr`. Bots are not labeled in a chohesive manner for Wikipedia. We use the union of the bots used for the [Wikipedia statistics](stats.wikimedia.org/), stored in `./data/erikZ.bots` and the `user_group.ug_group='bot'` flag in the MySql database. 
+    '''Returns a set of all known bots for `wp_pr`. Bots are not labeled in a chohesive manner for Wikipedia. We use the union of the bots used for the [Wikipedia statistics](stats.wikimedia.org/), stored in `./data/erikZ.bots` and the `user_group.ug_group='bot'` flag in the MySql database.
     '''
     bot_fn = os.path.join(os.path.split(__file__)[0], 'data', 'erikZ.bots')
     erikZ_bots = set(long(b) for b in open(bot_fn,'r'))
@@ -118,10 +118,10 @@ def parse_args():
 
     class WPFileAction(argparse.Action):
         """
-        This action is fired upon parsing the --wpfiles option which should be a list of 
+        This action is fired upon parsing the --wpfiles option which should be a list of
         tsv file names.  Each named file should have the wp project codes as the first column
         The codes will be used to query the databse with the name <ID>wiki.
-        
+
         (Sorry about the nasty python functional syntax.)
         """
 
@@ -153,7 +153,7 @@ def parse_args():
                              filter(
                                  lambda line: line[0] != '#',
                                  reduce(
-                                     list.__add__, 
+                                     list.__add__,
                                      map(
                                          file.readlines,
                                          map(
@@ -189,7 +189,7 @@ def parse_args():
     )
     parser.add_argument(
         '-p', '--wp',
-        metavar='proj',     
+        metavar='proj',
         nargs='+',
         dest = 'wp_projects',
         default = [],
@@ -232,7 +232,7 @@ def parse_args():
         '-n', '--threads',
         metavar='',
         type=int,
-        dest='threads', 
+        dest='threads',
         help="number of threads"
     )
     parser.add_argument(
@@ -306,11 +306,11 @@ def parse_args():
     if args.daily and args.start < cu_start + datetime.timedelta(days=30):
         parser.error('starting date (%s) exceeds persistence of check_user table (90 days, i.e. %s)' % (args.start, cu_start))
 
-    wp_projects = wikipedia_projects.check_validity(args.wp_projects)   
+    wp_projects = wikipedia_projects.check_validity(args.wp_projects)
     if not wp_projects:
         parser.error('no valid wikipedia projects recieved\n'
                          '       must either include the --wp flag or the --wpfiles flag\n')
-    
+
     if not args.threads:
         setattr(args,'threads', min(len(args.wp_projects), 30))
         logger.info('Running with %d threads', len(args.wp_projects))
@@ -322,7 +322,7 @@ def parse_args():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    args.subdir = '%s_%s' % (datetime.date.strftime(args.start,'%Y%m%d'), 
+    args.subdir = '%s_%s' % (datetime.date.strftime(args.start,'%Y%m%d'),
                               datetime.date.strftime(args.end,'%Y%m%d'))
 
     # check for mysql login credentials
@@ -346,7 +346,7 @@ def main():
             opts['start'] = day - datetime.timedelta(days=30)
             opts['end'] = day
             # give each run its own dir
-            opts['subdir'] = './%s_%s' % (datetime.date.strftime(opts['start'],'%Y%m%d'), 
+            opts['subdir'] = './%s_%s' % (datetime.date.strftime(opts['start'],'%Y%m%d'),
                                   datetime.date.strftime(opts['end'],'%Y%m%d'))
 
             if not os.path.exists(os.path.join(opts['output_dir'],  opts['subdir'])):
