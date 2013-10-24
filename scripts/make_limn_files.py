@@ -331,18 +331,18 @@ def process_project_par((project, basedir)):
 
         # db = sql.connect('/home/erosen/src/editor-geocoding/geowiki.sqlite')
 
-        write_project_mysql(project, cursor, args.basedir)
-        write_project_top_k_mysql(project, cursor, args.basedir, k=args.k)
-        #write_project_country_language(project, cursor, args.basedir)
+        write_project_mysql(project, cursor, basedir)
+        write_project_top_k_mysql(project, cursor, basedir, k=args.k)
+        #write_project_country_language(project, cursor, basedir)
     except:
         logger.exception('caught exception in process:')
         raise
 
 def process_project(project, cursor, basedir):
     logger.info('processing project: %s (%d/%d)', project, i, len(projects))
-    write_project_mysql(project, cursor, args.basedir)
-    write_project_top_k_mysql(project, cursor, args.basedir, k=args.k)
-    #write_project_country_language(project, cursor, args.basedir)
+    write_project_mysql(project, cursor, basedir)
+    write_project_top_k_mysql(project, cursor, basedir, k=args.k)
+    #write_project_country_language(project, cursor, basedir)
 
 def plot_gs_editor_fraction(basedir):
     df = pd.read_csv(basedir + '/datafiles/global_south.csv', index_col='date', parse_dates=['date'])
