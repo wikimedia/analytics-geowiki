@@ -49,7 +49,7 @@ do
 			"$MAIN_SCRIPT_FILE_ABS" --help
 			exit 0
 			;;
-		"--basedir="* | "-b="* )
+		"--basedir="* | "-d="* )
 			BASE_DIR_REL="${PARAM//*=/}"
 			;;
 	esac
