@@ -276,9 +276,13 @@ def parse_args():
         nargs='+',
         help='any number of appropriately named json files')
     parser.add_argument(
-        '-d','--basedir',
-        default='/home/erosen/src/dashboard/geowiki/data',
-        help='directory in which to find or create the datafiles and datasources directories for the *.csv and *.yaml files')
+        '-d', '--basedir_public',
+        default=os.path.join(os.path.expanduser('~'), 'geowiki', 'data-public'),
+        help='directory in which to find or create the public datafiles and public datasources directories for the *.csv and *.json files')
+    parser.add_argument(
+        '--basedir_private',
+        default=os.path.join(os.path.expanduser('~'), 'geowiki', 'data-private'),
+        help='directory in which to find or create the private datafiles and private datasources directories for the *.csv and *.json files')
     parser.add_argument(
         '-b', '--basename',
         default='geo_editors',
@@ -371,21 +375,24 @@ def drop_callout_widget(g):
         for widget in g.graph["root"]["children"] \
             if "nodeType" not in widget or widget["nodeType"] != "callout" ]
 
-def plot_active_editor_totals(basedir):
+def plot_active_editor_totals(basedir_source, basedir_destination):
     """Write out files for 'Active Editors Total' graph
 
     Keyword arguments:
-    basedir -- string. Path to the data repository
+    basedir_source -- string. Path to the data repository to read
+        global_south.csv from
+    basedir_destination -- string. Path to the data repository to store
+        the comupted data in
 
     This function computes the total number of active editors and
     writes out the necessary datafile, datasource, and graph files to
     show them in Limn. Those files get written into the corresponding
-    subdirectories of basedir.
+    subdirectories of basedir_destination.
 
     For the computation of the data, this function relies solely on
     the global_south.csv file.
     """
-    df = pd.read_csv(basedir + '/datafiles/global_south.csv', index_col='date', parse_dates=['date'])
+    df = pd.read_csv(basedir_source + '/datafiles/global_south.csv', index_col='date', parse_dates=['date'])
     df['Active Editors Total']   = (df['Global South (5+)']   + df['Global North (5+)']   + df['Unkown (5+)']  ).apply(float)
     df_total = df[['Active Editors Total']]
 
@@ -393,7 +400,7 @@ def plot_active_editor_totals(basedir):
             limn_name='Active Editors Total',
             limn_group=LIMN_GROUP,
             data = df_total)
-    ds_total.write(basedir)
+    ds_total.write(basedir_destination)
     g = ds_total.get_graph(metric_ids=['Active Editors Total'],
             title='Active Editors Total (Tentative)',
             graph_id='active_editors_total')
@@ -408,7 +415,7 @@ Also, this graph currently only considers the following projects
 
 """
     drop_callout_widget(g)
-    g.write(basedir)
+    g.write(basedir_destination)
 
 if __name__ == '__main__':
     args = parse_args()
@@ -419,7 +426,7 @@ if __name__ == '__main__':
     cursor = db.cursor()
 
 
-    write_project_mysql('en', cursor, args.basedir, country_graphs=True)
+    write_project_mysql('en', cursor, args.basedir_private, country_graphs=True)
 
     # # use metadata from Google Drive doc which lets us group by country
     #country_data = gcat.get_file(META_DATA_TITLE, sheet=META_DATA_SHEET, fmt='dict', usecache=False)
@@ -430,22 +437,22 @@ if __name__ == '__main__':
     # logger.debug('typ(country_data): %s', type(country_data))
     # logger.info('country_data[0].keys: %s', country_data[0].keys())
 
-    write_group_mysql(META_DATA_GLOBAL_SOUTH_FIELD, country_data, cursor, args.basedir)
-    write_group_mysql(META_DATA_REGION_FIELD, country_data, cursor, args.basedir)
+    write_group_mysql(META_DATA_GLOBAL_SOUTH_FIELD, country_data, cursor, args.basedir_private)
+    write_group_mysql(META_DATA_REGION_FIELD, country_data, cursor, args.basedir_private)
 
-    write_group_mysql(META_DATA_COUNTRY_FIELD, country_data, cursor, args.basedir)
+    write_group_mysql(META_DATA_COUNTRY_FIELD, country_data, cursor, args.basedir_private)
 
     projects = get_projects()
     if not args.parallel or sql.threadsafety < 2:
         for i, project in enumerate(projects):
             logger.info('processing project: %s (%d/%d)', project, i, len(projects))
-            process_project(project, cursor, args.basedir)
+            process_project(project, cursor, args.basedir_private)
     else:
         pool = multiprocessing.Pool(20)
-        pool.map_async(process_project_par, itertools.izip(projects, itertools.repeat(args.basedir))).get(99999)
+        pool.map_async(process_project_par, itertools.izip(projects, itertools.repeat(args.basedir_private))).get(99999)
 
-    write_overall_mysql(projects, cursor, args.basedir)
-    plot_gs_editor_fraction(args.basedir)
-    plot_active_editor_totals(args.basedir)
+    write_overall_mysql(projects, cursor, args.basedir_private)
+    plot_gs_editor_fraction(args.basedir_private)
+    plot_active_editor_totals(args.basedir_private, args.basedir_public)
 
 

@@ -41,7 +41,8 @@ export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/.local/lib/python2.7/
 #---------------------------------------------------
 # Filtering parameters
 CRON_MODE=no
-BASE_DIR_REL=
+BASE_DIR_PUBLIC_DIR_REL=
+BASE_DIR_PRIVATE_DIR_REL=
 for PARAM in "$@"
 do
 	case "$PARAM" in
@@ -49,8 +50,11 @@ do
 			"$MAIN_SCRIPT_FILE_ABS" --help
 			exit 0
 			;;
-		"--basedir="* | "-d="* )
-			BASE_DIR_REL="${PARAM//*=/}"
+		"--basedir_public="* | "-d="* )
+			BASE_DIR_PUBLIC_DIR_REL="${PARAM//*=/}"
+			;;
+		"--basedir_private="* )
+			BASE_DIR_PRIVATE_DIR_REL="${PARAM//*=/}"
 			;;
 	esac
 done
@@ -72,28 +76,42 @@ then
 	exit "$EXIT_CODE"
 fi
 
-if [ -z "$BASE_DIR_REL" ]
+if [ -z "$BASE_DIR_PUBLIC_DIR_REL" ]
 then
-	error "No --basedir provided."
+	error "No --basedir_public provided."
+fi
+
+if [ -z "$BASE_DIR_PRIVATE_DIR_REL" ]
+then
+	error "No --basedir_private provided."
 fi
 
 #---------------------------------------------------
 # Actual making and pushing of limn files
 
-# Cleaning data repo
-cd "$BASE_DIR_REL"
-git reset --hard
-git pull
-cd -
+# Cleaning data repos
+for REPO_DIR_REL in "$BASE_DIR_PUBLIC_DIR_REL" "$BASE_DIR_PRIVATE_DIR_REL"
+do
+	pushd "$REPO_DIR_REL" >/dev/null
+	git reset --hard
+	git pull
+	popd >/dev/null
+done
 
 # Recompute limn files
 "$MAIN_SCRIPT_FILE_ABS" "$@"
 
-# Commit and push limn files
-cd "$BASE_DIR_REL"
-git add -A
-LAST_DATE="$(tail --lines=1 datafiles/en_all.csv | cut --field=1 --delimiter=, )"
+# Get the most recent date. We assume en_all.csv always has at least one
+# editor on any given day :-)
+LAST_DATE="$(tail --lines=1 "$BASE_DIR_PRIVATE_DIR_REL/datafiles/en_all.csv" | cut --field=1 --delimiter=, )"
 LAST_DATE=${LAST_DATE////-}
-git commit -m "Automatic commit of data up to $LAST_DATE"
-git push
-cd -
+
+# Commit and push limn files
+for REPO_DIR_REL in "$BASE_DIR_PUBLIC_DIR_REL" "$BASE_DIR_PRIVATE_DIR_REL"
+do
+	pushd "$REPO_DIR_REL" >/dev/null
+	git add -A
+	git commit -m "Automatic commit of data up to $LAST_DATE"
+	git push
+	popd >/dev/null
+done
