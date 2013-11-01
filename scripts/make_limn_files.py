@@ -77,6 +77,9 @@ def write_default_graphs(source, limn_id, limn_name, basedir):
 
 
 def write_project_mysql(proj, cursor, basedir, country_graphs=False):
+    # TODO: This function's structure got copy/pasted to
+    # write_project_summed_mysql. Please apply fixes to this function also to
+    # write_project_summed_mysql.
     logger.debug('writing project datasource for: %s', proj)
     limn_id = proj + '_all'
     limn_name = '%s Editors by Country' % proj.upper()
@@ -104,6 +107,55 @@ def write_project_mysql(proj, cursor, basedir, country_graphs=False):
             title = '%s Editors in %s' % (proj.upper(), country)
             graph_id = '%s_%s' % (proj, re.sub('\W+', ' ', country).strip().replace(' ', '_').lower())
             source.write_graph(metric_ids=[country], basedir=basedir, title=title, graph_id=graph_id)
+
+
+def write_project_summed_mysql(proj, cursor, basedir):
+    """Write out per project sums of editors
+
+    Keyword arguments:
+    proj -- string. The name of the project in the database
+        (e.g.: 'en' for enwiki).
+    cursor -- database connection. Used to obtain the data.
+    basedir -- string. Path to the data repository to store the computed
+        data in.
+    """
+    # TODO: dumb copy/paste of write_project_mysql to get daily per project
+    # active editor counts. Please apply fixes to this function also to
+    # write_project_mysql.
+    logger.debug('writing summed project datasource for: %s', proj)
+    limn_id = proj + 'wiki_editor_counts'
+    limn_name = proj + 'wiki editors (Tentative)'
+
+    if sql.paramstyle == 'qmark':
+        query = """SELECT cohort, end, CONCAT(project, 'wiki') AS wikified_project, SUM(count)
+                    FROM erosen_geocode_active_editors_country
+                    WHERE project = ? AND end = start + INTERVAL 30 day
+                    GROUP BY cohort, end, project"""
+        logger.debug('making query: %s', query)
+    elif sql.paramstyle == 'format':
+        query = """SELECT cohort, end, CONCAT(project, 'wiki') AS wikified_project, SUM(count)
+                    FROM erosen_geocode_active_editors_country
+                    WHERE project = %s AND end = start + INTERVAL 30 day
+                    GROUP BY cohort, end, project"""
+    cursor.execute(query, [proj])
+    proj_rows = cursor.fetchall()
+
+    logger.debug('len(proj_rows): %d', len(proj_rows))
+    if not proj_rows and sql.paramstyle == 'format':
+        logger.debug('No results for query: %s', query % proj)
+        return
+    limn_rows = make_limn_rows(proj_rows, 'wikified_project', 'SUM(count)')
+    source = limnpy.DataSource(limn_id, limn_name, limn_rows, limn_group=LIMN_GROUP)
+    source.write(basedir=basedir)
+    graph = source.get_graph(metric_ids = ['%swiki (5+)' % project])
+    graph.graph['desc'] = """This graph currently mis-reports by counting each
+editor once for each country associated to the IP addresses used by
+the editor.
+"""
+    drop_callout_widget(graph)
+    graph.write(basedir)
+
+
 
 
 def write_project_top_k_mysql(proj, cursor,  basedir, k=10):
@@ -327,7 +379,7 @@ def get_projects():
     return projects
 
 
-def process_project_par((project, basedir)):
+def process_project_par((project, basedir_private, basedir_public)):
     try:
         logger.info('processing project: %s', project)
         db = sql.connect(read_default_file=args.source_sql_cnf, db=args.source_db_name)
@@ -335,18 +387,20 @@ def process_project_par((project, basedir)):
 
         # db = sql.connect('/home/erosen/src/editor-geocoding/geowiki.sqlite')
 
-        write_project_mysql(project, cursor, basedir)
-        write_project_top_k_mysql(project, cursor, basedir, k=args.k)
-        #write_project_country_language(project, cursor, basedir)
+        write_project_mysql(project, cursor, basedir_private)
+        write_project_top_k_mysql(project, cursor, basedir_private, k=args.k)
+        write_project_summed_mysql(project, cursor, basedir_public)
+        #write_project_country_language(project, cursor, basedir_private)
     except:
         logger.exception('caught exception in process:')
         raise
 
-def process_project(project, cursor, basedir):
+def process_project(project, cursor, basedir_private, basedir_public):
     logger.info('processing project: %s (%d/%d)', project, i, len(projects))
-    write_project_mysql(project, cursor, basedir)
-    write_project_top_k_mysql(project, cursor, basedir, k=args.k)
-    #write_project_country_language(project, cursor, basedir)
+    write_project_mysql(project, cursor, basedir_private)
+    write_project_top_k_mysql(project, cursor, basedir_private, k=args.k)
+    write_project_summed_mysql(project, cursor, basedir_public)
+    #write_project_country_language(project, cursor, basedir_private)
 
 def plot_gs_editor_fraction(basedir):
     df = pd.read_csv(os.path.join(basedir, 'datafiles', 'global_south.csv'), index_col='date', parse_dates=['date'])
@@ -446,10 +500,10 @@ if __name__ == '__main__':
     if not args.parallel or sql.threadsafety < 2:
         for i, project in enumerate(projects):
             logger.info('processing project: %s (%d/%d)', project, i, len(projects))
-            process_project(project, cursor, args.basedir_private)
+            process_project(project, cursor, args.basedir_private, args.basedir_public)
     else:
         pool = multiprocessing.Pool(20)
-        pool.map_async(process_project_par, itertools.izip(projects, itertools.repeat(args.basedir_private))).get(99999)
+        pool.map_async(process_project_par, itertools.izip(projects, itertools.repeat(args.basedir_private), itertools.repeat(args.basedir_public))).get(99999)
 
     write_overall_mysql(projects, cursor, args.basedir_private)
     plot_gs_editor_fraction(args.basedir_private)
