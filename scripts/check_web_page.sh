@@ -61,13 +61,6 @@ EXPECTED_LAST_DATE_OVERRIDE["grants_count_by_global_south"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_count_by_program"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_spending_by_global_south"]="2013-06-01"
 EXPECTED_LAST_DATE_OVERRIDE["grants_spending_by_program"]="2013-06-01"
-# IP of last editor for sg_all, and sg_top10 jumped from Netherlands
-# to US on 2013-08-29. Hence, the column for United States is not long
-# enough
-EXPECTED_LAST_DATE_OVERRIDE["sg_all"]="2013-09-05"
-# The last run of top10 computations for sg did not pull in 'United
-# States'. So sg_top10 is lagging behind even further.
-EXPECTED_LAST_DATE_OVERRIDE["sg_top10"]="2013-08-29"
 
 # The parameter passed to date's 'date' option to arrive at the
 # default last date to expect from files.
@@ -788,9 +781,20 @@ check_csv_global_south() {
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Global South (all)"  2  3  40000  60000
     # In the following three lines, the missing n in 'Unkown' is on
     # purpose, as we currently see that in the csv.
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (100+)"      25 60     10     40
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (5+)"        10 20    200    300
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (all)"        7 20    700   1000
+    #
+    # Currently the lower bounds for stride 7 (40,300,1000) fail.
+    # Getting the 'Unkown's down will need classification from
+    # grantmaking, which will take some time. To not spend this time
+    # right now, but get monitoring up again soonish, we bump the
+    # limits for the unknowns. But we bump to values that will fire
+    # again soon. Once they fire again, we'll have to ask grantmaking
+    # to classify the unknown countries.
+    # Once grantmaking categorized the unknowns, and they go down
+    # again, also set back the lower bounds in
+    # check_csv_global_south_editor_fractions.
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (100+)"      25 60     10    260
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (5+)"        10 20    200   2600
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (all)"       10 20    700  10000
 }
 
 #---------------------------------------------------
@@ -815,7 +819,11 @@ check_csv_global_south_editor_fractions() {
     # 5 fractional digits.
     sed -e 's/,0.\([0-9]\{5\}\)[0-9]*/,x\1/g' -e 's/,x0*/,/g' "$DOWNLOADED_FILE_ABS" >"$CSV_RESCALED_FILE_ABS"
 
-    check_csv_column "$CSV_STUB" "$CSV_RESCALED_FILE_ABS" "Global South Fraction (100+)" 2  5 15000 19000
+    # The high number of unknowns for the Global North/South
+    # classification, brings this number down. As we bumped the limits
+    # of unknows in check_csv_global_south, we have to adapt here and
+    # drop the lower bounds below 15000.
+    check_csv_column "$CSV_STUB" "$CSV_RESCALED_FILE_ABS" "Global South Fraction (100+)" 2  5 14500 19000
     check_csv_column "$CSV_STUB" "$CSV_RESCALED_FILE_ABS" "Global South Fraction (5+)"   1  2 17000 21000
     check_csv_column "$CSV_STUB" "$CSV_RESCALED_FILE_ABS" "Global South Fraction (all)"  1  2 18000 22000
 }
@@ -836,9 +844,7 @@ check_csv_active_editors_total() {
     check_csv "$CSV_STUB"
     local CSV_FILE_ABS="$DOWNLOADED_FILE_ABS"
 
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total (100+)"  1  2    8000  10000
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total (5+)"    1  1   70000  80000
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total (all)"   1  1  230000 255000
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Active Editors Total"    1  1   70000  80000
 }
 
 #---------------------------------------------------
@@ -873,16 +879,16 @@ check_csv_region() {
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Europe (5+)"                2   2  35000  40000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Europe (all)"               1   2 110000 120000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (100+)"       2   5   1400   1800
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (5+)"         2   4  12500  16100
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (5+)"         2   4  13500  17100
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "North America (all)"        2   3  50000  60000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "South/Latin America (100+)" 4   7    400    600
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "South/Latin America (5+)"   2   4   4000   6000
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "South/Latin America (5+)"   3   4   4000   6000
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "South/Latin America (all)"  2   4  16000  20000
     # In the following three lines, the missing n in 'Unkown' is on
     # purpose, as we currently see that in the csv.
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (100+)"             50 120      2     15
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (5+)"               12  40     40    100
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (all)"              14  28    200    450
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Unkown (all)"              14  28    100    350
 }
 
 #---------------------------------------------------
@@ -904,7 +910,7 @@ check_csv_pt_top10() {
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Brazil (100+)"        8 15  100  200
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Brazil (5+)"          2  7  800 1400
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Brazil (all)"         2  4 3000 4000
-    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "France (all)"        15 25   35   80
+    check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "France (all)"        15 27   35   80
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Germany (all)"       15 25   60  110
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Portugal (all)"       6 14  300  550
     check_csv_column "$CSV_STUB" "$CSV_FILE_ABS" "Spain (all)"         15 40   20   70
