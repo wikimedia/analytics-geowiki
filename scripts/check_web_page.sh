@@ -1401,7 +1401,7 @@ check_graphs() {
 check_datasources() {
     check_datasource_json active_editors_total csv
     check_datasource_json global_south        csv
-    check_datasource_yaml map-world_countries json
+    check_datasource_json map-world_countries json
     check_datasource_json pt_top10            csv
     check_datasource_json region              csv
 
