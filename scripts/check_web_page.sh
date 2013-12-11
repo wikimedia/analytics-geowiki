@@ -79,6 +79,16 @@ USE_CACHE=no
 # the web. This is mostly useful for debugging.
 LOCAL_DATA_CHECKOUTS_DIR_RELI=()
 
+# Set CHECK_PRIVATE_PART_LIMN_FILES to "yes" to check the limn files
+# of the private part eventhough they do not get served through the
+# private data's web server. This check will only succeed when adding a
+# checkout of the private data repository via “--add-checkout”.
+#
+# (You can use the --check-private-part-limn-files to set
+# CHECK_PRIVATE_PART_LIMN_FILES=yes temporarily)
+CHECK_PRIVATE_PART_LIMN_FILES=no
+#CHECK_PRIVATE_PART_LIMN_FILES=yes
+
 #---------------------------------------------------
 # Prints the script's help screen
 #
@@ -108,6 +118,11 @@ OPTIONS:
                     for debugging the script. But you'll have to
                     cleanup the /tmp/geowiki_monitor... files by hand
                     on your own.
+--check-private-part-limn-files
+                 -- Check limn files of private part, eventhough they do not get
+                    served through the private data's web server. This check
+                    will only succeed when adding a checkout of the private data
+                    repository via “--add-checkout” (see above).
 --date DATE      -- per default expect that all datafiles come with data up to,
                     and including DATE. DATE can be any value accepted by
                     date's --date option. (Default: "yesterday")
@@ -153,6 +168,9 @@ parse_arguments() {
             "--cache" )
                 USE_CACHE="yes"
                 ;;
+	    "--check-private-part-limn-files" )
+		CHECK_PRIVATE_PART_LIMN_FILES=yes
+		;;
             "--date" )
 		[[ $# -ge 1 ]] || error "$ARGUMENT requires a further parameter"
                 DEFAULT_LAST_EXPECTED_DATE_PARAMETER="$1"
@@ -335,8 +353,11 @@ use_public_server() {
 use_private_server() {
     set_URL_BASEs "$PRIVATE_PART_URL_BASE"
 
-    # The CSV files are currently served directly at URL_BASE.
-    URL_BASE_CSV="$URL_BASE"
+    if [ "$CHECK_PRIVATE_PART_LIMN_FILES" != "yes" ]
+    then
+	# The CSV files are currently served directly at URL_BASE.
+	URL_BASE_CSV="$URL_BASE"
+    fi
 
     HTTP_USER="$PRIVATE_PART_USER"
     HTTP_PASSWORD="$PRIVATE_PART_PASSWORD"
@@ -1618,12 +1639,14 @@ check_private_data() {
 
     # We currently only serve datafiles on the server for the private
     # data. Hence we cannot check the staffolding for the graphs of
-    # the datafiles.
-    #
-    #check_private_dashboards
-    #check_private_graphs
-    #check_private_datasources
-
+    # the datafiles by default. But if the user requested it, we do
+    # check them.
+    if [ "$CHECK_PRIVATE_PART_LIMN_FILES" = "yes" ]
+    then
+	check_private_dashboards
+	check_private_graphs
+	check_private_datasources
+    fi
     check_private_datafiles
 }
 
