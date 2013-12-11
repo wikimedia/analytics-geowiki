@@ -34,11 +34,10 @@ VERBOSITY_VERBOSE=11
 VERBOSITY="$VERBOSITY_NORMAL"
 
 # Urls to download files from
-URL_BASE="http://gp.wmflabs.org/"
-URL_BASE_DASHBOARD="$URL_BASE/dashboards"
-URL_BASE_GRAPH="$URL_BASE/graphs"
-URL_BASE_DATASOURCE="$URL_BASE/datasources"
-URL_BASE_CSV="$URL_BASE/data/datafiles/gp"
+PUBLIC_PART_URL_BASE="http://gp.wmflabs.org/"
+PRIVATE_PART_URL_BASE="https://stats.wikimedia.org/geowiki-private/"
+PRIVATE_PART_USER=
+PRIVATE_PART_PASSWORD=
 
 # Wikis with many active editors.
 # For those wikis, we use allow less deviation from linear
@@ -112,6 +111,12 @@ OPTIONS:
 --date DATE      -- per default expect that all datafiles come with data up to,
                     and including DATE. DATE can be any value accepted by
                     date's --date option. (Default: "yesterday")
+--private-part-user USER
+                 -- Authenticate as user USER when fetching files private
+                    data files.
+--private-part-password-file PWD_FILE
+                 -- Authenticate using the first line of PWD_FILE as password
+                    when fetching files private data files.
 --quiet          -- suppress all messages but errors.
 --verbose        -- More verbose output.
 
@@ -153,6 +158,17 @@ parse_arguments() {
                 DEFAULT_LAST_EXPECTED_DATE_PARAMETER="$1"
 		shift
                 ;;
+	    "--private-part-user" )
+		[[ $# -ge 1 ]] || error "$ARGUMENT requires a further parameter"
+		PRIVATE_PART_USER="$1"
+		shift
+		;;
+	    "--private-part-password-file" )
+		[[ $# -ge 1 ]] || error "$ARGUMENT requires a further parameter"
+		[[ -f "$1" ]] || error "'$1' is not a file"
+		read -r PRIVATE_PART_PASSWORD <"$1" || error "Could not read line from '$1'"
+		shift
+		;;
             "--quiet" )
                 VERBOSITY="$VERBOSITY_QUIET"
                 ;;
@@ -260,6 +276,73 @@ set_EXPECTED_LAST_DATE() {
 }
 
 #---------------------------------------------------
+# Sets URL_BASE_* varibales relative to a given URL.
+#
+# Input:
+#   $1 - The URL to use as base
+#
+# Output:
+#   URL_BASE - Base URL
+#   URL_BASE_CSV - URL to fetch CSVs from
+#   URL_BASE_DASHBOARD - URL to fetch dashboards from
+#   URL_BASE_DATASOURCE - URL to fetch datasources from
+#   URL_BASE_GRAPH - URL to fetch graphs from
+#
+set_URL_BASEs() {
+    URL_BASE="$1"
+    URL_BASE_DASHBOARD="$URL_BASE/dashboards"
+    URL_BASE_GRAPH="$URL_BASE/graphs"
+    URL_BASE_DATASOURCE="$URL_BASE/datasources"
+    URL_BASE_CSV="$URL_BASE/data/datafiles/gp"
+}
+
+#---------------------------------------------------
+# Sets connection related variables to server of pubic geowiki files.
+#
+# Input:
+#
+# Output:
+#   HTTP_USER - User name used for authentication when fetching files
+#   HTTP_PASSWORD - Password used for authentication when fetching files
+#   URL_BASE - Base URL
+#   URL_BASE_CSV - URL to fetch CSVs from
+#   URL_BASE_DASHBOARD - URL to fetch dashboards from
+#   URL_BASE_DATASOURCE - URL to fetch datasources from
+#   URL_BASE_GRAPH - URL to fetch graphs from
+#
+use_public_server() {
+    set_URL_BASEs "$PUBLIC_PART_URL_BASE"
+
+    # The public serve should not require authentication
+    HTTP_USER=
+    HTTP_PASSWORD=
+}
+
+#---------------------------------------------------
+# Sets connection related variables to server of private geowiki files.
+#
+# Input:
+#
+# Output:
+#   HTTP_USER - User name used for authentication when fetching files
+#   HTTP_PASSWORD - Password used for authentication when fetching files
+#   URL_BASE - Base URL
+#   URL_BASE_CSV - URL to fetch CSVs from
+#   URL_BASE_DASHBOARD - URL to fetch dashboards from
+#   URL_BASE_DATASOURCE - URL to fetch datasources from
+#   URL_BASE_GRAPH - URL to fetch graphs from
+#
+use_private_server() {
+    set_URL_BASEs "$PRIVATE_PART_URL_BASE"
+
+    # The CSV files are currently served directly at URL_BASE.
+    URL_BASE_CSV="$URL_BASE"
+
+    HTTP_USER="$PRIVATE_PART_USER"
+    HTTP_PASSWORD="$PRIVATE_PART_PASSWORD"
+}
+
+#---------------------------------------------------
 # Downloads a URL to $DOWNLOADED_FILE_ABS without considering caches.
 #
 # Rather use the download_file function instead, as do_download_file
@@ -334,10 +417,20 @@ do_download_file() {
 	cp "$LOCAL_COPY_FILE_RELI" "$DOWNLOADED_FILE_ABS"
     else
 	log "$VERBOSITY_VERBOSE" "Downloading $URL ..."
+	local WGET_EXTRA_OPTS=()
+	if [ ! -z "$HTTP_USER" ]
+	then
+	    WGET_EXTRA_OPTS=( "${WGET_EXTRA_OPTS[@]}" "--user" "$HTTP_USER" )
+	fi
+	if [ ! -z "$HTTP_PASSWORD" ]
+	then
+	    WGET_EXTRA_OPTS=( "${WGET_EXTRA_OPTS[@]}" "--password" "$HTTP_PASSWORD" )
+	fi
 	wget \
 	    --no-check-certificate \
 	    -O "$DOWNLOADED_FILE_ABS" \
 	    -o /dev/null \
+	    "${WGET_EXTRA_OPTS[@]}" \
 	    "$URL" \
 	    || ( rm -f "$DOWNLOADED_FILE_ABS" ; error "Failed to fetch '$URL'" )
     fi
@@ -1504,6 +1597,7 @@ check_private_datafiles() {
 #   -
 #
 check_public_data() {
+    use_public_server
     check_public_dashboards
     check_public_graphs
     check_public_datasources
@@ -1520,9 +1614,16 @@ check_public_data() {
 #   -
 #
 check_private_data() {
-    check_private_dashboards
-    check_private_graphs
-    check_private_datasources
+    use_private_server
+
+    # We currently only serve datafiles on the server for the private
+    # data. Hence we cannot check the staffolding for the graphs of
+    # the datafiles.
+    #
+    #check_private_dashboards
+    #check_private_graphs
+    #check_private_datasources
+
     check_private_datafiles
 }
 
