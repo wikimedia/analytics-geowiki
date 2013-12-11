@@ -184,7 +184,7 @@ parse_arguments() {
 	    "--private-part-password-file" )
 		[[ $# -ge 1 ]] || error "$ARGUMENT requires a further parameter"
 		[[ -f "$1" ]] || error "'$1' is not a file"
-		read -r PRIVATE_PART_PASSWORD <"$1" || error "Could not read line from '$1'"
+		PRIVATE_PART_PASSWORD=$(head -n 1 "$1")
 		shift
 		;;
             "--quiet" )
