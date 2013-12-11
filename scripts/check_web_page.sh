@@ -334,8 +334,12 @@ do_download_file() {
 	cp "$LOCAL_COPY_FILE_RELI" "$DOWNLOADED_FILE_ABS"
     else
 	log "$VERBOSITY_VERBOSE" "Downloading $URL ..."
-	wget -O "$DOWNLOADED_FILE_ABS" -o /dev/null "$URL" || \
-            ( rm -f "$DOWNLOADED_FILE_ABS" ; error "Failed to fetch '$URL'" )
+	wget \
+	    --no-check-certificate \
+	    -O "$DOWNLOADED_FILE_ABS" \
+	    -o /dev/null \
+	    "$URL" \
+	    || ( rm -f "$DOWNLOADED_FILE_ABS" ; error "Failed to fetch '$URL'" )
     fi
 }
 
