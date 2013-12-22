@@ -91,7 +91,7 @@ fi
 
 foreach_data_repo() {
 	local REPO_DIR_REL
-	for REPO_DIR_REL in "$BASE_DIR_PUBLIC_DIR_REL" "$BASE_DIR_PRIVATE_DIR_REL"
+	for REPO_DIR_REL in "$BASE_DIR_PRIVATE_DIR_REL" "$BASE_DIR_PUBLIC_DIR_REL"
 	do
 		pushd "$REPO_DIR_REL" >/dev/null
 		"$@"
