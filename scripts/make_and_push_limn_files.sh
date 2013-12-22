@@ -102,6 +102,7 @@ foreach_data_repo() {
 # Cleaning data repos
 clean_repo() {
 	git reset --hard
+	git clean --force --quiet
 	git pull
 }
 foreach_data_repo clean_repo
