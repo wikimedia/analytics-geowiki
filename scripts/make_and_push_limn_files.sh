@@ -89,14 +89,22 @@ fi
 #---------------------------------------------------
 # Actual making and pushing of limn files
 
+foreach_data_repo() {
+	local REPO_DIR_REL
+	for REPO_DIR_REL in "$BASE_DIR_PUBLIC_DIR_REL" "$BASE_DIR_PRIVATE_DIR_REL"
+	do
+		pushd "$REPO_DIR_REL" >/dev/null
+		"$@"
+		popd >/dev/null
+	done
+}
+
 # Cleaning data repos
-for REPO_DIR_REL in "$BASE_DIR_PUBLIC_DIR_REL" "$BASE_DIR_PRIVATE_DIR_REL"
-do
-	pushd "$REPO_DIR_REL" >/dev/null
+clean_repo() {
 	git reset --hard
 	git pull
-	popd >/dev/null
-done
+}
+foreach_data_repo clean_repo
 
 # Recompute limn files
 "$MAIN_SCRIPT_FILE_ABS" "$@"
@@ -107,11 +115,9 @@ LAST_DATE="$(tail --lines=1 "$BASE_DIR_PRIVATE_DIR_REL/datafiles/en_all.csv" | c
 LAST_DATE=${LAST_DATE////-}
 
 # Commit and push limn files
-for REPO_DIR_REL in "$BASE_DIR_PUBLIC_DIR_REL" "$BASE_DIR_PRIVATE_DIR_REL"
-do
-	pushd "$REPO_DIR_REL" >/dev/null
+commit_and_push_limn_files() {
 	git add -A
 	git commit -m "Automatic commit of data up to $LAST_DATE"
 	git push
-	popd >/dev/null
-done
+}
+foreach_data_repo commit_and_push_limn_files
