@@ -114,10 +114,15 @@ foreach_data_repo clean_repo
 LAST_DATE="$(tail --lines=1 "$BASE_DIR_PRIVATE_DIR_REL/datafiles/en_all.csv" | cut --field=1 --delimiter=, )"
 LAST_DATE=${LAST_DATE////-}
 
-# Commit and push limn files
-commit_and_push_limn_files() {
+# Commit limn files
+commit_limn_files() {
 	git add -A
 	git commit -m "Automatic commit of data up to $LAST_DATE"
+}
+foreach_data_repo commit_limn_files
+
+# Push limn files
+push_limn_files() {
 	git push
 }
-foreach_data_repo commit_and_push_limn_files
+foreach_data_repo push_limn_files
