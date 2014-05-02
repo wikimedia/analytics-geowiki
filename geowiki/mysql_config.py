@@ -86,7 +86,7 @@ cluster_mapping = {'enwiki':'s1','bgwiki':'s2','bgwiktionary':'s2','cswiki':'s2'
 
 # new CNAME system.
 # TODO: abstract mapping to a use just number and then autogenerate CNAMES aliases
-db_mapping = {'s1':'s1-analytics-slave.eqiad.wmnet',
+db_mapping = {'s1':'analytics-store.eqiad.wmnet',
           's2':'s2-analytics-slave.eqiad.wmnet',
           's3':'s3-analytics-slave.eqiad.wmnet',
           's4':'s4-analytics-slave.eqiad.wmnet',
