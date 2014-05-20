@@ -3,14 +3,22 @@
 """
 # Geodata
 
-Export geo location data from the recent_changes table. The script is running multiple languages in parallel using the `multiprocessing` module.
+Export geo location data from the recent_changes table. The script is running
+multiple languages in parallel using the `multiprocessing` module.
 
 """
 
-import os,sys, logging,argparse,pprint
-import datetime, dateutil.relativedelta, dateutil.parser
+import argparse
+import copy
+import datetime
+import dateutil.parser
+import dateutil.relativedelta
+import functools
+import logging
+import os
+import pprint
+
 from multiprocessing import Pool
-import functools, copy
 from operator import itemgetter
 
 import geo_coding as gc
@@ -38,15 +46,18 @@ def run_parallel(opts):
     partial_process_project = functools.partial(process_project, opts=opts)
     p.map(partial_process_project, opts['wp_projects'])
 
-    logger.info('All projects done. Results are in %s'%(opts['output_dir']))
+    logger.info('All projects done. Results are in %s' % (opts['output_dir']))
 
 
 def mysql_resultset(wp_pr, start, end, opts):
-    '''Returns an iterable MySql resultset using a server side cursor that can be used to iterate the data. Alternavively, the `dump_data_iterator()` method dumps the data onto disk before  aggregation.
+    '''
+    Returns an iterable MySql resultset using a server side cursor that can be
+    used to iterate the data. Alternavively, the `dump_data_iterator()` method
+    dumps the data onto disk before  aggregation.
     '''
     # query = mysql_config.construct_rc_query(db_name)
-    query = mysql_config.construct_cu_query(wp_pr=wp_pr,start=start, end=end)
-    logger.debug("SQL query for %s for start=%s, end=%s:\n\t%s"%(wp_pr, start, end, query))
+    query = mysql_config.construct_cu_query(wp_pr=wp_pr, start=start, end=end)
+    logger.debug("SQL query for %s for start=%s, end=%s:\n\t%s" % (wp_pr, start, end, query))
 
     cur = mysql_config.get_analytics_cursor(wp_pr, opts, server_side=True)
     cur.execute(query)
@@ -55,10 +66,14 @@ def mysql_resultset(wp_pr, start, end, opts):
 
 
 def retrieve_bot_list(wp_pr, opts):
-    '''Returns a set of all known bots for `wp_pr`. Bots are not labeled in a chohesive manner for Wikipedia. We use the union of the bots used for the [Wikipedia statistics](stats.wikimedia.org/), stored in `./data/erikZ.bots` and the `user_group.ug_group='bot'` flag in the MySql database.
+    '''
+    Returns a set of all known bots for `wp_pr`. Bots are not labeled in a
+    chohesive manner for Wikipedia. We use the union of the bots used for the
+    [Wikipedia statistics](stats.wikimedia.org/), stored in `./data/erikZ.bots`
+    and the `user_group.ug_group='bot'` flag in the MySql database.
     '''
     bot_fn = os.path.join(os.path.split(__file__)[0], 'data', 'erikZ.bots')
-    erikZ_bots = set(long(b) for b in open(bot_fn,'r'))
+    erikZ_bots = set(long(b) for b in open(bot_fn, 'r'))
 
     query = mysql_config.construct_bot_query(wp_pr)
     cur = mysql_config.get_analytics_cursor(wp_pr, opts, server_side=False)
@@ -67,7 +82,8 @@ def retrieve_bot_list(wp_pr, opts):
 
     pr_bots = set(c[0] for c in cur)
 
-    logger.debug("%s: There are %s additional bots (from %s) not in ErikZ bot file"%(wp_pr,len(pr_bots-erikZ_bots),len(pr_bots)))
+    logger.debug("%s: There are %s additional bots (from %s) not in ErikZ bot file" % (
+        wp_pr, len(pr_bots - erikZ_bots), len(pr_bots)))
 
     return erikZ_bots.union(pr_bots)
 
@@ -75,12 +91,12 @@ def retrieve_bot_list(wp_pr, opts):
 def process_project(wp_pr, opts):
 
     try:
-        logger.info('CREATING DATASET FOR %s'%wp_pr)
+        logger.info('CREATING DATASET FOR %s' % wp_pr)
 
         ### use a server-side cursor to iterate the result set
-        source = mysql_resultset(wp_pr,opts['start'], opts['end'], opts)
+        source = mysql_resultset(wp_pr, opts['start'], opts['end'], opts)
         bots = retrieve_bot_list(wp_pr, opts)
-        (editors,cities) = gc.extract(source=source,filter_ids=bots,geoIP_db=opts['geoIP_db'])
+        (editors, cities) = gc.extract(source=source, filter_ids=bots, geoIP_db=opts['geoIP_db'])
 
         # aggregate
         logging.debug('tallying')
@@ -103,7 +119,7 @@ def process_project(wp_pr, opts):
         #mysql_config.dump_json(wp_pr, 'city_fractions', city_fractions, opts)
         #mysql_config.dump_json(wp_pr, 'country_total_edits', country_total_edits, opts)
 
-        logger.info('Done : %s'%wp_pr)
+        logger.info('Done : %s' % wp_pr)
     except:
         """
         this is the function which the multiprocessing pool maps
@@ -146,25 +162,25 @@ def parse_args():
             # logging.info('moka projects: %s', projects)
 
             projects = list(set(
-                     map(
-                         itemgetter(0),
-                         map(
-                             str.split,
-                             filter(
-                                 lambda line: line[0] != '#',
-                                 reduce(
-                                     list.__add__,
-                                     map(
-                                         file.readlines,
-                                         map(
-                                             open,
-                                             values)), []))))))
+                map(
+                    itemgetter(0),
+                    map(
+                        str.split,
+                        filter(
+                            lambda line: line[0] != '#',
+                            reduce(
+                                list.__add__,
+                                map(
+                                    file.readlines,
+                                    map(
+                                        open,
+                                        values)), []))))))
 
             # logging.info('new - old: %s', set(project_list) - set(old))
             # logging.info('old - new: %s', set(old) - set(project_list))
+            # import sys
             # sys.exit()
             setattr(namespace, self.dest, projects)
-
 
     def auto_date(datestr):
         #logger.debug('entering autodate: %s', datestr)
@@ -176,7 +192,7 @@ def parse_args():
     )
     parser.add_argument(
         '-o', '--output',
-        dest = 'output_dir',
+        dest='output_dir',
         metavar='output_dir',
         default='./output',
         help='<path> for output.  program will actually make a subdirectory within the'
@@ -191,15 +207,15 @@ def parse_args():
         '-p', '--wp',
         metavar='proj',
         nargs='+',
-        dest = 'wp_projects',
-        default = [],
+        dest='wp_projects',
+        default=[],
         help='the wiki project to analyze (e.g. `en`)',
     )
     parser.add_argument(
         '--wpfiles',
         metavar='wp_ids.tsv',
         nargs='+',
-        dest = 'wp_projects',
+        dest='wp_projects',
         action=WPFileAction,
         help='list of tsv files in which the first column is the project id and the second column is the full name'
         'will clobber any arguments passed in by --wp if --wpfiles appears later in list'
@@ -227,7 +243,7 @@ def parse_args():
         default=False,
         help='including this flag instructs the program to run monthly queries ending on each day between the '
         'start and end date instead of only once for the entire range'
-        )
+    )
     parser.add_argument(
         '-n', '--threads',
         metavar='',
@@ -245,15 +261,15 @@ def parse_args():
         metavar='',
         default='/usr/share/GeoIP/GeoIPCity.dat',
         #default='/home/erosen/share/GeoIP/GeoIPCity.dat', # this one I manually manage
-        dest = 'geoIP_db',
+        dest='geoIP_db',
         help='<path> to geo IP database'
     )
     parser.add_argument(
         '--top_cities',
         type=int,
         default=10,
-        help = 'number of cities to report when aggregating by city'
-        )
+        help='number of cities to report when aggregating by city'
+    )
     parser.add_argument(
         '--source_sql_cnf',
         type=os.path.expanduser,
@@ -261,7 +277,7 @@ def parse_args():
         help='mysql ini-style option file which allows a user to write to the read from database'
         'production mediawiki databases to collect ip info. For more information, see '
         'http://dev.mysql.com/doc/refman/5.1/en/option-files.html'
-        )
+    )
     parser.add_argument(
         '--dest_sql_cnf',
         type=os.path.expanduser,
@@ -269,33 +285,33 @@ def parse_args():
         help='mysql ini-style option file which allows a user to write to the destination database'
         'for use with the write_*_sql output options.  For more information, see '
         'http://dev.mysql.com/doc/refman/5.1/en/option-files.html'
-        )
+    )
     parser.add_argument(
         '--dest_db_name',
         default='staging',
         help='name of database in which to insert results'
-        )
+    )
     parser.add_argument(
         '--active_editors_country',
-        default = mysql_config.DEST_TABLE_NAMES['active_editors_country'],
-        help = 'table in `dest_sql` db in which the active editor cohorts by country will be stored'
-        )
+        default=mysql_config.DEST_TABLE_NAMES['active_editors_country'],
+        help='table in `dest_sql` db in which the active editor cohorts by country will be stored'
+    )
     parser.add_argument(
         '--active_editors_world',
-        default = mysql_config.DEST_TABLE_NAMES['active_editors_world'],
+        default=mysql_config.DEST_TABLE_NAMES['active_editors_world'],
         help='table in `dest_sql` db in which the active editor cohorts for the entire world will be stored'
-        )
+    )
     parser.add_argument(
         '--city_edit_fraction',
-        default = mysql_config.DEST_TABLE_NAMES['city_edit_fraction'],
+        default=mysql_config.DEST_TABLE_NAMES['city_edit_fraction'],
         help='table in `dest_sql` db in which the fraction of total country edits originating from'
         'the given city will be stored'
-        )
+    )
     parser.add_argument(
         '--country_total_edit',
-        default = mysql_config.DEST_TABLE_NAMES['country_total_edit'],
+        default=mysql_config.DEST_TABLE_NAMES['country_total_edit'],
         help='table in `dest_sql` db in which the total number of edits from a given country will be stored'
-        )
+    )
 
     # post processing
     args = parser.parse_args()
@@ -309,10 +325,10 @@ def parse_args():
     wp_projects = wikipedia_projects.check_validity(args.wp_projects)
     if not wp_projects:
         parser.error('no valid wikipedia projects recieved\n'
-                         '       must either include the --wp flag or the --wpfiles flag\n')
+                     '       must either include the --wp flag or the --wpfiles flag\n')
 
     if not args.threads:
-        setattr(args,'threads', min(len(args.wp_projects), 30))
+        setattr(args, 'threads', min(len(args.wp_projects), 30))
         logger.info('Running with %d threads', len(args.wp_projects))
 
     if args.quiet:
@@ -322,14 +338,15 @@ def parse_args():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    args.subdir = '%s_%s' % (datetime.date.strftime(args.start,'%Y%m%d'),
-                              datetime.date.strftime(args.end,'%Y%m%d'))
+    args.subdir = '%s_%s' % (
+        datetime.date.strftime(args.start, '%Y%m%d'),
+        datetime.date.strftime(args.end, '%Y%m%d'))
 
     # check for mysql login credentials
     if not os.path.exists(os.path.expanduser("~/.my.cnf")):
         logger.error("~/.my.cnf does not exist! MySql connection might fail")
 
-    logger.info('args: %s', pprint.pformat(vars(args),indent=2))
+    logger.info('args: %s', pprint.pformat(vars(args), indent=2))
     return vars(args)
 
 
@@ -346,10 +363,11 @@ def main():
             opts['start'] = day - datetime.timedelta(days=30)
             opts['end'] = day
             # give each run its own dir
-            opts['subdir'] = './%s_%s' % (datetime.date.strftime(opts['start'],'%Y%m%d'),
-                                  datetime.date.strftime(opts['end'],'%Y%m%d'))
+            opts['subdir'] = './%s_%s' % (
+                datetime.date.strftime(opts['start'], '%Y%m%d'),
+                datetime.date.strftime(opts['end'], '%Y%m%d'))
 
-            if not os.path.exists(os.path.join(opts['output_dir'],  opts['subdir'])):
+            if not os.path.exists(os.path.join(opts['output_dir'], opts['subdir'])):
                 os.makedirs(os.path.join(opts['output_dir'], opts['subdir']))
             # log to file in subdir
             fh = logging.FileHandler(os.path.join(opts['output_dir'], opts['subdir'], 'log'))
@@ -360,7 +378,7 @@ def main():
 
             run_parallel(opts)
     else:
-        if not os.path.exists(os.path.join(opts['output_dir'],  opts['subdir'])):
+        if not os.path.exists(os.path.join(opts['output_dir'], opts['subdir'])):
             os.makedirs(os.path.join(opts['output_dir'], opts['subdir']))
         logger.addHandler(logging.FileHandler(os.path.join(opts['output_dir'], opts['subdir'], 'log')))
         run_parallel(opts)
