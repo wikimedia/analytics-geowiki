@@ -9,7 +9,7 @@ setup(
     version='0.1.0',
     description='Geo Coding module',
     long_description=readme,
-    url='https://gerrit.wikimedia.org/r/gitweb?p=analytics/editor-geocoding.git;a=summary',
+    url='http://git.wikimedia.org/summary/?r=analytics/geowiki.git',
 
     author='Declerambaul',
     author_email='{otto,dvanliere,fkaelin,dsc,erosen}@wikimedia.org',
