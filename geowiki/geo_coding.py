@@ -8,23 +8,29 @@ ETL for geo coding entries from the recentchanges table.
 
 '''
 
-import sys,os,logging
 import datetime
-import gzip,re
-import operator
+import gzip
+import logging
 import mysql_config
+import operator
+import os
 import pprint
+import re
+import sys
+
 from collections import defaultdict
 
 import GeoIP
 
 logger = logging.getLogger(__name__)
 
+
 def valid_ip(ip):
-    return bool(re.match('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}',ip))
+    return bool(re.match('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}', ip))
+
 
 ### EXTRACT
-def extract(source,filter_ids,geoIP_db,sep=None):
+def extract(source, filter_ids, geoIP_db, sep=None):
     '''Extracts geo data on editor and country/city level from the data source.
 
     The source is a compressed mysql result set with the following format.
@@ -83,20 +89,18 @@ def extract(source,filter_ids,geoIP_db,sep=None):
             city = record['city']
             country = record['country_name']
 
-            if city=='' or city==' ':
+            if city == '' or city == ' ':
                 city = "Unknown"
 
-            if country=='' or country==' ':
+            if country == '' or country == ' ':
                 country = "Unknown"
         else:
             # ip invalid
             city = 'Invalid IP'
             country = 'Invalid IP'
 
-
-
-
         # country -> city data
+
         if country not in cities:
             cities[country] = {}
 
@@ -104,7 +108,6 @@ def extract(source,filter_ids,geoIP_db,sep=None):
             cities[country][city] += 1
         else:
             cities[country][city] = 1
-
 
         # country -> editors data
 
@@ -120,19 +123,18 @@ def extract(source,filter_ids,geoIP_db,sep=None):
             editors[user][country]['edits'] = 1
             # editors[user][country]['len_change'] = len_change
 
-    return (editors,cities)
-
+    return (editors, cities)
 
 
 def get_active_editors(wp_pr, editors, opts):
     ### Editor activity
 
-    editor_counts = defaultdict(lambda : defaultdict(int))
+    editor_counts = defaultdict(lambda: defaultdict(int))
 
-    bins = map(str,range(1,11))
-    bins = bins + ['%d-%d' % (thresh, thresh + 10) for thresh in range(0,100,10)]
+    bins = map(str, range(1, 11))
+    bins = bins + ['%d-%d' % (thresh, thresh + 10) for thresh in range(0, 100, 10)]
     bins = bins + ['all', '5+', '100+']
-    init_cohorts = dict(zip(bins, [0]*len(bins)))
+    init_cohorts = dict(zip(bins, [0] * len(bins)))
 
     country_nest = defaultdict(lambda: defaultdict(int))
     world_nest = defaultdict(int)
@@ -141,13 +143,13 @@ def get_active_editors(wp_pr, editors, opts):
         for country, einfo in ginfo.iteritems():
             count = einfo['edits']
             if count > 0:
-                country_nest[country]["all"] +=1
+                country_nest[country]["all"] += 1
                 world_nest["all"] += 1
                 if count >= 5:
-                    country_nest[country]["5+"] +=1
+                    country_nest[country]["5+"] += 1
                     world_nest["5+"] += 1
                     if count >= 100:
-                        country_nest[country]["100+"] +=1
+                        country_nest[country]["100+"] += 1
                         world_nest["100+"] += 1
             if count <= 10:
                 country_nest[country]['%d' % count] += 1
@@ -155,32 +157,34 @@ def get_active_editors(wp_pr, editors, opts):
                 bottom = 10 * (int(count) / 10)
                 country_nest[country]['%s-%s' % (bottom, bottom + 10)] += 1
 
-
-    #flatten
+    # flatten
     country_rows = []
     start_str = opts['start'].isoformat()
     end_str = opts['end'].isoformat()
     for country, cohorts in country_nest.items():
         for cohort, count in cohorts.items():
-            row = {'project' : wp_pr,
-                   'country' : country,
-                   'cohort' : cohort,
-                   'start' : start_str,
-                   'end' : end_str,
-                   'count' : count}
+            row = {
+                'project': wp_pr,
+                'country': country,
+                'cohort': cohort,
+                'start': start_str,
+                'end': end_str,
+                'count': count,
+            }
             country_rows.append(row)
 
     world_rows = []
     for cohort, count in world_nest.items():
-        row = {'project' : wp_pr,
-               'cohort' : cohort,
-               'start' : start_str,
-               'end' : end_str,
-               'count' : count}
+        row = {
+            'project': wp_pr,
+            'cohort': cohort,
+            'start': start_str,
+            'end': end_str,
+            'count': count,
+        }
         world_rows.append(row)
 
     return country_rows, world_rows
-
 
 
 def get_city_edits(wp_pr, countries, opts):
@@ -190,15 +194,17 @@ def get_city_edits(wp_pr, countries, opts):
     country_totals = []
     start_str = opts['start'].isoformat()
     end_str = opts['end'].isoformat()
-    for country,cities in countries.iteritems():
+    for country, cities in countries.iteritems():
 
-        city_info_sorted = sorted(cities.iteritems(),key=operator.itemgetter(1),reverse=True)
+        city_info_sorted = sorted(cities.iteritems(), key=operator.itemgetter(1), reverse=True)
         totaledits = sum([c[1] for c in city_info_sorted])
-        row = {'project' : wp_pr,
-               'country' : country,
-               'start' : start_str,
-               'end' : end_str,
-               'edits' : totaledits}
+        row = {
+            'project': wp_pr,
+            'country': country,
+            'start': start_str,
+            'end': end_str,
+            'edits': totaledits,
+        }
         country_totals.append(row)
 
         ### pseudo-confuscation for 1 to 10 scale
@@ -206,15 +212,16 @@ def get_city_edits(wp_pr, countries, opts):
 
         # normalization
         city_info_normalized = [(name, edits / float(totaledits)) for (name, edits) in city_info_sorted]
-        city_info_min_fraction = filter(lambda (name, frac) : frac >= 0.1, city_info_normalized)
+        city_info_min_fraction = filter(lambda (name, frac): frac >= 0.1, city_info_normalized)
         for city, frac in city_info_min_fraction:
-            row = {'project' : wp_pr,
-                   'country' : country,
-                   'city' : city,
-                   'start' : start_str,
-                   'end' : end_str,
-                   'fraction' : frac}
+            row = {
+                'project': wp_pr,
+                'country': country,
+                'city': city,
+                'start': start_str,
+                'end': end_str,
+                'fraction': frac,
+            }
             city_rows.append(row)
 
     return city_rows, country_totals
-
