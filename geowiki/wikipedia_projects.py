@@ -1,27 +1,27 @@
-import os
 import logging
 logger = logging.getLogger(__name__)
 
-wikipedia_projects = set(['en','fr', 'de', 'it', 'ru','gv', 'gu', 'scn', 'wuu', 'cdo', 'sco', 'gd', 'ga', 'gn', 'gl', 'als', 'lg', 'pnb', 'lb', 'szl', 'la', 'ln', 'lo', 'tt', 'tr', 'cbk-zam', 'li', 'lv', 'to', 'tl', 'vec', 'th', 'ti', 'tg', 'te', 'ksh', 'pcd', 'ta', 'yi', 'ceb', 'yo', 'da', 'za', 'bxr', 'dz', 'hif', 'rm', 'dv', 'bar', 'vls', 'koi', 'qu', 'eml', 'kn', 'fiu-vro', 'bpy', 'crh', 'mhr', 'diq', 'el', 'eo', 'mn', 'zh', 'mwl', 'pms', 'ee', 'tpi', 'arz', 'rmy', 'mdf', 'kaa', 'mh', 'arc', 'cr', 'eu', 'et', 'tet', 'es', 'ba', 'roa-tara', 'mus', 'mrj', 'ha', 'ak', 'lad', 'bm', 'new', 'rn', 'ro', 'dsb', 'bn', 'hsb', 'be', 'bg', 'be-x-old', 'uk', 'wa', 'ast', 'wo', 'got', 'jv', 'bo', 'bh', 'bi', 'map-bms', 'hak', 'tum', 'br', 'lmo', 'ja', 'om', 'glk', 'ace', 'ng', 'ilo', 'ty', 'oc', 'kj', 'st', 'tw', 'krc', 'nds', 'os', 'or', 'ext', 'xh', 'ch', 'co', 'simple', 'bjn', 'ca', 'bs', 'ce', 'ts', 'na', 'cy', 'ang', 'cs', 'udm', 'cho', 'cv', 'cu', 've', 'fj', 'ps', 'srn', 'pt', 'sm', 'lt', 'zh-min-nan', 'frr', 'chr', 'frp', 'xal', 'chy', 'pi', 'war', 'pl', 'tk', 'hz', 'hy', 'nrm', 'hr', 'iu', 'pnt', 'ht', 'hu', 'gan', 'bat-smg', 'hi', 'ho', 'kg', 'an', 'bug', 'he', 'mg', 'fur', 'uz', 'ml', 'mo', 'roa-rup', 'mi', 'as', 'mk', 'ur', 'zea', 'mt', 'stq', 'ms', 'mr', 'ug', 'haw', 'my', 'ki', 'pih', 'aa', 'sah', 'ss', 'af', 'tn', 'vi', 'is', 'am', 'vo', 'ii', 'ay', 'ik', 'ar', 'lbe', 'km', 'io', 'av', 'ia', 'az', 'ie', 'id', 'nds-nl', 'pap', 'ks', 'nl', 'nn', 'no', 'pa', 'nah', 'ne', 'lij', 'csb', 'ny', 'nap', 'myv', 'ig', 'pag', 'zu', 'so', 'pam', 'nv', 'sn', 'kab', 'jbo', 'zh-yue', 'fy', 'fa', 'rw', 'ff', 'fi', 'mzn', 'ab', 'ky', 'zh-classical', 'fo', 'bcl', 'ka', 'nov', 'ckb', 'kk', 'sr', 'sq', 'ko', 'sv', 'su', 'kl', 'sk', 'kr', 'si', 'sh', 'kw', 'kv', 'ku', 'sl', 'sc', 'sa', 'sd', 'sg', 'sw', 'se', 'pdc'])
+wikipedia_projects = set(['en', 'fr', 'de', 'it', 'ru', 'gv', 'gu', 'scn', 'wuu', 'cdo', 'sco', 'gd', 'ga', 'gn', 'gl', 'als', 'lg', 'pnb', 'lb', 'szl', 'la', 'ln', 'lo', 'tt', 'tr', 'cbk-zam', 'li', 'lv', 'to', 'tl', 'vec', 'th', 'ti', 'tg', 'te', 'ksh', 'pcd', 'ta', 'yi', 'ceb', 'yo', 'da', 'za', 'bxr', 'dz', 'hif', 'rm', 'dv', 'bar', 'vls', 'koi', 'qu', 'eml', 'kn', 'fiu-vro', 'bpy', 'crh', 'mhr', 'diq', 'el', 'eo', 'mn', 'zh', 'mwl', 'pms', 'ee', 'tpi', 'arz', 'rmy', 'mdf', 'kaa', 'mh', 'arc', 'cr', 'eu', 'et', 'tet', 'es', 'ba', 'roa-tara', 'mus', 'mrj', 'ha', 'ak', 'lad', 'bm', 'new', 'rn', 'ro', 'dsb', 'bn', 'hsb', 'be', 'bg', 'be-x-old', 'uk', 'wa', 'ast', 'wo', 'got', 'jv', 'bo', 'bh', 'bi', 'map-bms', 'hak', 'tum', 'br', 'lmo', 'ja', 'om', 'glk', 'ace', 'ng', 'ilo', 'ty', 'oc', 'kj', 'st', 'tw', 'krc', 'nds', 'os', 'or', 'ext', 'xh', 'ch', 'co', 'simple', 'bjn', 'ca', 'bs', 'ce', 'ts', 'na', 'cy', 'ang', 'cs', 'udm', 'cho', 'cv', 'cu', 've', 'fj', 'ps', 'srn', 'pt', 'sm', 'lt', 'zh-min-nan', 'frr', 'chr', 'frp', 'xal', 'chy', 'pi', 'war', 'pl', 'tk', 'hz', 'hy', 'nrm', 'hr', 'iu', 'pnt', 'ht', 'hu', 'gan', 'bat-smg', 'hi', 'ho', 'kg', 'an', 'bug', 'he', 'mg', 'fur', 'uz', 'ml', 'mo', 'roa-rup', 'mi', 'as', 'mk', 'ur', 'zea', 'mt', 'stq', 'ms', 'mr', 'ug', 'haw', 'my', 'ki', 'pih', 'aa', 'sah', 'ss', 'af', 'tn', 'vi', 'is', 'am', 'vo', 'ii', 'ay', 'ik', 'ar', 'lbe', 'km', 'io', 'av', 'ia', 'az', 'ie', 'id', 'nds-nl', 'pap', 'ks', 'nl', 'nn', 'no', 'pa', 'nah', 'ne', 'lij', 'csb', 'ny', 'nap', 'myv', 'ig', 'pag', 'zu', 'so', 'pam', 'nv', 'sn', 'kab', 'jbo', 'zh-yue', 'fy', 'fa', 'rw', 'ff', 'fi', 'mzn', 'ab', 'ky', 'zh-classical', 'fo', 'bcl', 'ka', 'nov', 'ckb', 'kk', 'sr', 'sq', 'ko', 'sv', 'su', 'kl', 'sk', 'kr', 'si', 'sh', 'kw', 'kv', 'ku', 'sl', 'sc', 'sa', 'sd', 'sg', 'sw', 'se', 'pdc'])
 
 
 def check_validity(wp_projects):
-	'''Checks whether all elements in `wp_projects` are wikipedia projects.
-	'''
-	for wp in wp_projects:
-		if wp not in wikipedia_projects:
-			logging.warning("%s not a valid wikipedia project"%wp)	
-	return set(wp for wp in wp_projects if wp in wikipedia_projects)
-	
+    '''Checks whether all elements in `wp_projects` are wikipedia projects.
+    '''
+    for wp in wp_projects:
+        if wp not in wikipedia_projects:
+            logging.warning("%s not a valid wikipedia project" % wp)
+    return set(wp for wp in wp_projects if wp in wikipedia_projects)
+
 
 # data_suffix = '_geo'
 # out_suffix = '_geo'
 
+# import os
 # def get_done_languages(d,suffix):
 # 	done = []
-# 	for root, dirs, files in os.walk(d):			
-# 		for f in files:				
-			
+# 	for root, dirs, files in os.walk(d):
+# 		for f in files:
+
 # 			path = os.path.join(root,f)
 # 			size =  os.path.getsize(path)
 # 			if size <= 50:
