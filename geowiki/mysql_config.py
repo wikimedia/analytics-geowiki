@@ -11,12 +11,10 @@ The login info has to to be configured by creating the file `~/.my.cnf` with the
 import logging
 import os
 
-from datetime import datetime,timedelta
-import calendar
+from datetime import datetime
 from collections import OrderedDict
 import codecs
 import json
-import time
 
 try:
     import MySQLdb
