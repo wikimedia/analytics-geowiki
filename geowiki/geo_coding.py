@@ -8,15 +8,9 @@ ETL for geo coding entries from the recentchanges table.
 
 '''
 
-import datetime
-import gzip
 import logging
-import mysql_config
 import operator
-import os
-import pprint
 import re
-import sys
 
 from collections import defaultdict
 
@@ -129,12 +123,9 @@ def extract(source, filter_ids, geoIP_db, sep=None):
 def get_active_editors(wp_pr, editors, opts):
     ### Editor activity
 
-    editor_counts = defaultdict(lambda: defaultdict(int))
-
     bins = map(str, range(1, 11))
     bins = bins + ['%d-%d' % (thresh, thresh + 10) for thresh in range(0, 100, 10)]
     bins = bins + ['all', '5+', '100+']
-    init_cohorts = dict(zip(bins, [0] * len(bins)))
 
     country_nest = defaultdict(lambda: defaultdict(int))
     world_nest = defaultdict(int)
