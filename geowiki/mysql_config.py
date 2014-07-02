@@ -48,7 +48,7 @@ def construct_rc_query(wp_pr):
 
 # mysql query for the check user data
 #checkuser_query = "SELECT cuc.cuc_user, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>=%s AND cuc.cuc_timestamp<%s"
-checkuser_query = "SELECT cuc.cuc_user, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>%s AND cuc.cuc_timestamp<%s"
+checkuser_query = "SELECT cuc.cuc_user, cuc.cuc_ip FROM %s.cu_changes cuc WHERE cuc.cuc_namespace=0 AND cuc.cuc_user!=0 AND cuc.cuc_timestamp>'%s' AND cuc.cuc_timestamp<'%s'"
 
 
 def construct_cu_query(wp_pr, start, end):
