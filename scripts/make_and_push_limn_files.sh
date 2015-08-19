@@ -30,12 +30,12 @@ error() {
 # Like really bad.
 # But at least it allows us to run the scripts for now.
 
-PYTHON_SHIM_BASE_DIR_ABS=/home/qchris/
-export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/wp-zero/wikimarkup-1.01b1+encoding_patch+removed_django_depends"
-export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/wp-zero/src/limnpy"
-export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/wp-zero/src/mcc-mnc"
-export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/wp-zero/src/wikipandas"
-export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/global-dev/dashboard/src/gcat"
+PYTHON_SHIM_BASE_DIR_ABS=/home/milimetric/geowiki-dependencies/
+export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/wikimarkup-1.01b1+encoding_patch+removed_django_depends"
+export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/src/limnpy"
+export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/src/mcc-mnc"
+export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/src/wikipandas"
+export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/src/gcat"
 export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/.local/lib/python2.7/site-packages"
 
 #---------------------------------------------------

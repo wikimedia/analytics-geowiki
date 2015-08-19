@@ -412,9 +412,9 @@ def process_project(project, cursor, basedir_private, basedir_public):
 
 def plot_gs_editor_fraction(basedir):
     df = pd.read_csv(os.path.join(basedir, 'datafiles', 'global_south.csv'), index_col='date', parse_dates=['date'])
-    df['Global South Fraction (100+)'] = df['Global South (100+)'] / (df['Global South (100+)'] + df['Global North (100+)'] + df['Unkown (100+)']).apply(float)
-    df['Global South Fraction (5+)'] = df['Global South (5+)'] / (df['Global South (5+)'] + df['Global North (5+)'] + df['Unkown (5+)']).apply(float)
-    df['Global South Fraction (all)'] = df['Global South (all)'] / (df['Global South (all)'] + df['Global North (all)'] + df['Unkown (all)']).apply(float)
+    df['Global South Fraction (100+)'] = df['Global South (100+)'] / (df['Global South (100+)'] + df['Global North (100+)'] + df['Unknown (100+)']).apply(float)
+    df['Global South Fraction (5+)'] = df['Global South (5+)'] / (df['Global South (5+)'] + df['Global North (5+)'] + df['Unknown (5+)']).apply(float)
+    df['Global South Fraction (all)'] = df['Global South (all)'] / (df['Global South (all)'] + df['Global North (all)'] + df['Unknown (all)']).apply(float)
     df_frac = df[['Global South Fraction (100+)', 'Global South Fraction (5+)', 'Global South Fraction (all)']]
 
     ds_frac = limnpy.DataSource(
@@ -461,7 +461,7 @@ def plot_active_editor_totals(basedir_source, basedir_destination):
     the global_south.csv file.
     """
     df = pd.read_csv(os.path.join(basedir_source, 'datafiles', 'global_south.csv'), index_col='date', parse_dates=['date'])
-    df['Active Editors Total'] = (df['Global South (5+)'] + df['Global North (5+)'] + df['Unkown (5+)']).apply(float)
+    df['Active Editors Total'] = (df['Global South (5+)'] + df['Global North (5+)'] + df['Unknown (5+)']).apply(float)
     df_total = df[['Active Editors Total']]
 
     ds_total = limnpy.DataSource(
@@ -502,7 +502,7 @@ if __name__ == '__main__':
     # # use metadata from Google Drive doc which lets us group by country
     #country_data = gcat.get_file(META_DATA_TITLE, sheet=META_DATA_SHEET, fmt='dict', usecache=False)
     country_data_df = wikipandas.get_table(
-        title='List_of_Countries_by_Regional_Classification',
+        title='List of countries by regional classification',
         site='meta.wikimedia.org',
         table_idx=0
     )

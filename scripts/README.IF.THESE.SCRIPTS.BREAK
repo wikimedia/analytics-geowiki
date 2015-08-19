@@ -1,0 +1,30 @@
+These scripts, as mentioned in some of them, currently rely on an ad-hoc python dependency setup.  I will detail that setup here just in case this hasn't been fixed by the time the scripts fail again.  This is largely based on these notes from Christian, of team Analytics fame: https://phabricator.wikimedia.org/T106229#1551364
+
+Basically we have to install all the dependencies, in some folder, and add them to the python path set by make_and_push_limn_files.py.  This folder has to give read access to the stats user whose cron currently executes the scripts.
+
+# wikimarkup
+wget https://pypi.python.org/packages/source/w/wikimarkup/wikimarkup-1.01b1+encoding_patch+removed_django_depends.tar.gz
+tar -xzvf 'wikimarkup-1.01b1+encoding_patch+removed_django_depends.tar.gz'
+cd wikimarkup-1.01b1+encoding_patch+removed_django_depends
+pip install --user -e .
+
+# limnpy
+pip install --user -e git+git://github.com/wikimedia/limnpy.git#egg=limnpy-0.1.0
+
+# mcc-mnc (not really needed by geowiki anymore)
+pip install --user -e git+git://github.com/embr/mcc-mnc.git#egg=mcc-mnc-0.1.0
+
+# wikipandas
+pip install --user -e git+git://github.com/embr/wikipandas.git#egg=wikipandas-0.0.1
+
+pip install --user google-api-python-client
+
+pip install -e git+git://github.com/embr/gcat.git#egg=gcat-0.1.0
+
+# any dependencies needed by http://git.wikimedia.org/blob/analytics%2Fgeowiki.git/2050c2c1e9c0850f27bb0d0f266101026f693bfc/setup.py.  At the time of writing only this was necessary:
+
+# for using the MaxMind databases
+pip install --user geoip
+
+
+I prefer to install all these dependencies on my own machine, using ~/geowiki-dependencies.  Then I move anything put by pip in ~/.local/lib/python2.7/site-packages to ~/geowiki-dependencies/.local/lib/python2.7/site-packages and zip up the whole thing and put it on the stat machine running geowiki.  That way it can be backed up all together and hopefully nobody has to read this message, they'd just restore the backup.
