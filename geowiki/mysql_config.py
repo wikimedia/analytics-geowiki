@@ -132,16 +132,15 @@ cluster_mapping = {
     'kowiki': 's7',
 }
 
-# new CNAME system.
-# TODO: abstract mapping to a use just number and then autogenerate CNAMES aliases
+# all databases can be found on analytics-store
 db_mapping = {
-    's1': 's1-analytics-slave.eqiad.wmnet',
-    's2': 's2-analytics-slave.eqiad.wmnet',
-    's3': 's3-analytics-slave.eqiad.wmnet',
-    's4': 's4-analytics-slave.eqiad.wmnet',
-    's5': 's5-analytics-slave.eqiad.wmnet',
-    's6': 's6-analytics-slave.eqiad.wmnet',
-    's7': 's7-analytics-slave.eqiad.wmnet',
+    's1': 'analytics-store.eqiad.wmnet',
+    's2': 'analytics-store.eqiad.wmnet',
+    's3': 'analytics-store.eqiad.wmnet',
+    's4': 'analytics-store.eqiad.wmnet',
+    's5': 'analytics-store.eqiad.wmnet',
+    's6': 'analytics-store.eqiad.wmnet',
+    's7': 'analytics-store.eqiad.wmnet',
 }
 
 
