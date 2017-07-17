@@ -41,7 +41,6 @@ export PYTHONPATH="$PYTHONPATH:${PYTHON_SHIM_BASE_DIR_ABS}/.local/lib/python2.7/
 #---------------------------------------------------
 # Filtering parameters
 CRON_MODE=no
-BASE_DIR_PUBLIC_DIR_REL=
 BASE_DIR_PRIVATE_DIR_REL=
 for PARAM in "$@"
 do
@@ -49,9 +48,6 @@ do
 		"--help" | "-h" )
 			"$MAIN_SCRIPT_FILE_ABS" --help
 			exit 0
-			;;
-		"--basedir_public="* | "-d="* )
-			BASE_DIR_PUBLIC_DIR_REL="${PARAM//*=/}"
 			;;
 		"--basedir_private="* )
 			BASE_DIR_PRIVATE_DIR_REL="${PARAM//*=/}"
@@ -76,11 +72,6 @@ then
 	exit "$EXIT_CODE"
 fi
 
-if [ -z "$BASE_DIR_PUBLIC_DIR_REL" ]
-then
-	error "No --basedir_public provided."
-fi
-
 if [ -z "$BASE_DIR_PRIVATE_DIR_REL" ]
 then
 	error "No --basedir_private provided."
@@ -91,7 +82,7 @@ fi
 
 foreach_data_repo() {
 	local REPO_DIR_REL
-	for REPO_DIR_REL in "$BASE_DIR_PRIVATE_DIR_REL" "$BASE_DIR_PUBLIC_DIR_REL"
+	for REPO_DIR_REL in "$BASE_DIR_PRIVATE_DIR_REL"
 	do
 		pushd "$REPO_DIR_REL" >/dev/null
 		"$@"
