@@ -21,7 +21,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "argparse >=1.2.1",
-        "MySQL-python >= 1.2.3",
+        "MySQL-python >= 1.3.7",
         "geoip",
         "gcat == 0.1.0",
     ],

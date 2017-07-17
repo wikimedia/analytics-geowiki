@@ -78,7 +78,7 @@ def retrieve_bot_list(wp_pr, opts):
     query = mysql_config.construct_bot_query(wp_pr)
     cur = mysql_config.get_analytics_cursor(wp_pr, opts, server_side=False)
     cur.execute(query)
-    cur.connection.close()
+    cur.close()
 
     pr_bots = set(c[0] for c in cur)
 

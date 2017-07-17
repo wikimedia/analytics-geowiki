@@ -234,7 +234,7 @@ def create_dest_tables(cursor, opts):
         field_str = ',\n'.join(map(' '.join, field_types.items()))
         command = 'CREATE TABLE IF NOT EXISTS %s (%s)' % (table_name, field_str)
         cursor.execute(command)
-    cursor.connection.commit()
+    cursor.analytics_db.commit()
 
 
 def get_dest_cursor(opts):
@@ -242,6 +242,7 @@ def get_dest_cursor(opts):
     db = MySQLdb.connect(read_default_file=opts['dest_sql_cnf'], db=opts['dest_db_name'])
     cur = db.cursor(MySQLdb.cursors.Cursor)
     #create_dest_tables(cur, opts)
+    cur.analytics_db = db
     return cur
 
 
@@ -254,7 +255,7 @@ def write_country_active_editors_mysql(active_editors_by_country, opts, cursor):
     query_fmt = """REPLACE INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
     #logging.debug(query_fmt)
     cursor.executemany(query_fmt, active_editors_by_country)
-    cursor.connection.commit()
+    cursor.analytics_db.commit()
 
 
 def write_world_active_editors_mysql(world_active_editors, opts, cursor):
@@ -265,7 +266,7 @@ def write_world_active_editors_mysql(world_active_editors, opts, cursor):
     dict_fmt = ', '.join(map(lambda f: '%%(%s)s' % f, fields))
     query_fmt = """REPLACE INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
     cursor.executemany(query_fmt, world_active_editors)
-    cursor.connection.commit()
+    cursor.analytics_db.commit()
 
 
 def write_city_edit_fraction_mysql(city_edit_fractions, opts, cursor):
@@ -276,7 +277,7 @@ def write_city_edit_fraction_mysql(city_edit_fractions, opts, cursor):
     dict_fmt = ', '.join(map(lambda f: '%%(%s)s' % f, fields))
     query_fmt = """REPLACE INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
     cursor.executemany(query_fmt, city_edit_fractions)
-    cursor.connection.commit()
+    cursor.analytics_db.commit()
 
 
 def write_country_total_edits_mysql(country_totals, opts, cursor):
@@ -287,7 +288,7 @@ def write_country_total_edits_mysql(country_totals, opts, cursor):
     dict_fmt = ', '.join(map(lambda f: '%%(%s)s' % f, fields))
     query_fmt = """REPLACE INTO %s (%s) VALUES (%s);""" % (table, ','.join(fields), dict_fmt)
     cursor.executemany(query_fmt, country_totals)
-    cursor.connection.commit()
+    cursor.analytics_db.commit()
 
 
 def get_filepath(_type, project, opts):
