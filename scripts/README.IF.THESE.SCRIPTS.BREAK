@@ -21,7 +21,7 @@ pip install --user google-api-python-client
 
 pip install -e git+git://github.com/embr/gcat.git#egg=gcat-0.1.0
 
-# any dependencies needed by http://git.wikimedia.org/blob/analytics%2Fgeowiki.git/2050c2c1e9c0850f27bb0d0f266101026f693bfc/setup.py.  At the time of writing only this was necessary:
+# any dependencies needed by https://phabricator.wikimedia.org/source/analytics-geowiki/browse/master/setup.py.  At the time of writing only this was necessary:
 
 # for using the MaxMind databases
 pip install --user geoip
